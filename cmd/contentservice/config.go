@@ -16,6 +16,11 @@ func parseEnv() (*config, error) {
 type config struct {
 	ServeRESTAddress string `envconfig:"serve_rest_address" default:":8001"`
 	ServeGRPCAddress string `envconfig:"serve_grpc_address" default:":8002"`
-	DatabaseDriver   string `envconfig:"db_driver" default:"mysql"`
-	DSN              string `envconfig:"dsn" default:"root:1234@/orderservice"`
+
+	DatabaseUser     string `envconfig:"db_user" default:"root"`
+	DatabasePassword string `envconfig:"db_password" default:"1234"`
+	DatabaseHost     string `envconfig:"db_host" default:"contentservice-db"`
+	DatabaseName     string `envconfig:"db_name" default:"ContentService"`
+
+	MaxDatabaseConnections int `envconfig:"max_connections" default:"10"`
 }

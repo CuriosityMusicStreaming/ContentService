@@ -2,6 +2,7 @@ package main
 
 import (
 	"contentservice/api/contentservice"
+	"contentservice/pkg/common/infrastructure/mysql"
 	"contentservice/pkg/common/infrastructure/server"
 	"contentservice/pkg/contentservice/infrastructure"
 	"contentservice/pkg/contentservice/infrastructure/transport"
@@ -39,12 +40,20 @@ func main() {
 }
 
 func runService(config *config) error {
-	//db, err := sqlx.Open(config.DatabaseDriver, config.DSN)
-	//if err != nil {
-	//	logger.Fatal(err)
-	//}
-	//
-	//defer db.Close()
+	dsn := mysql.DSN{
+		User:     config.DatabaseUser,
+		Password: config.DatabasePassword,
+		Host:     config.DatabaseHost,
+		Database: config.DatabaseName,
+	}
+	connector := mysql.NewConnector()
+
+	err := connector.Open(dsn, config.MaxDatabaseConnections)
+	if err != nil {
+		return err
+	}
+
+	defer connector.Close()
 
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
