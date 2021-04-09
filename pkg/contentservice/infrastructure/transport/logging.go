@@ -1,9 +1,9 @@
 package transport
 
 import (
-	"contentservice/pkg/common/infrastructure/logging/activity"
 	"context"
 	"fmt"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/activity"
 	"github.com/pkg/errors"
 	logger "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

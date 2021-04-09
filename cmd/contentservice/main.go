@@ -2,11 +2,12 @@ package main
 
 import (
 	"contentservice/api/contentservice"
-	"contentservice/pkg/common/infrastructure/mysql"
-	"contentservice/pkg/common/infrastructure/server"
+	migrationsembedder "contentservice/data/mysql"
 	"contentservice/pkg/contentservice/infrastructure"
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	"io"
@@ -47,8 +48,12 @@ func runService(config *config) error {
 		Database: config.DatabaseName,
 	}
 	connector := mysql.NewConnector()
+	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
+	if err != nil {
+		logger.Fatal("failed to migrate")
+	}
 
-	err := connector.Open(dsn, config.MaxDatabaseConnections)
+	err = connector.Open(dsn, config.MaxDatabaseConnections)
 	if err != nil {
 		return err
 	}
