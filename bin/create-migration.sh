@@ -19,15 +19,19 @@ fi
 DATETIME_PREFIX=$(date -u "+%Y%m%d%H%M%S")
 MIGRATION_NAME=$(printf "%s" "$1" | tr -c "a-z0-9" "_")
 
-# Creates "up" or "down" migration file with boilerplate content
-# Usage: touch_migration_file up|down
-touch_migration_file() {
-    local FILENAME=${DATETIME_PREFIX}_${MIGRATION_NAME}.$1.sql
+writeSectionIntoFile() {
+  echo "-- +migrate $1" >> "$2"
+}
+
+touchMigrationFile() {
+    local FILENAME=${DATETIME_PREFIX}-${MIGRATION_NAME}.sql
     local FILEPATH=${OUTPUT_DIR}/${FILENAME}
-    echo "-- Write SQL migration \"$1\" here. You can use only one SQL statement per migration." >"$FILEPATH"
+    touch "$FILEPATH"
+    writeSectionIntoFile "Up" "$FILEPATH"
+    echo "" >> "$FILEPATH"
+    writeSectionIntoFile "Down" "$FILEPATH"
     echo "created $FILEPATH"
 }
 
-touch_migration_file "up"
-touch_migration_file "down"
-echo "now you should write SQL migrations in these files"
+touchMigrationFile
+echo "now you can write SQL migrations in these file"

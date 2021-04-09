@@ -50,7 +50,7 @@ func runService(config *config) error {
 	connector := mysql.NewConnector()
 	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
 	if err != nil {
-		logger.Fatal("failed to migrate")
+		logger.WithError(err).Fatal("failed to migrate")
 	}
 
 	err = connector.Open(dsn, config.MaxDatabaseConnections)

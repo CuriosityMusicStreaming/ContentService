@@ -20,7 +20,7 @@ type config struct {
 	DatabaseUser     string `envconfig:"db_user" default:"root"`
 	DatabasePassword string `envconfig:"db_password" default:"1234"`
 	DatabaseHost     string `envconfig:"db_host" default:"contentservice-db"`
-	DatabaseName     string `envconfig:"db_name" default:"ContentService"`
+	DatabaseName     string `envconfig:"db_name" default:"contentservice"`
 
 	MaxDatabaseConnections int `envconfig:"max_connections" default:"10"`
 }
