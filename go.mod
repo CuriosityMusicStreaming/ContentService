@@ -3,7 +3,7 @@ module contentservice
 go 1.16
 
 require (
-	github.com/CuriosityMusicStreaming/ComponentsPool v1.0.0
+	github.com/CuriosityMusicStreaming/ComponentsPool v1.0.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
