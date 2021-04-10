@@ -4,6 +4,8 @@ package contentservice;
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
+option go_package = ".;contentservice";
+
 
 service ContentService {
     rpc AddContent (AddContentRequest) returns (google.protobuf.Empty) {

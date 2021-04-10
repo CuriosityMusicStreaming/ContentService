@@ -6,11 +6,14 @@ import (
 	"contentservice/pkg/contentservice/infrastructure"
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	"io"
+	stdlog "log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,28 +22,30 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-	logger "github.com/sirupsen/logrus"
 )
 
 var appID = "UNKNOWN"
 
 func main() {
-	logger.SetFormatter(&logger.JSONFormatter{})
+	logger, err := initLogger()
+	if err != nil {
+		stdlog.Fatal("failed to initialize logger")
+	}
 
 	config, err := parseEnv()
 	if err != nil {
-		logger.Fatal(err)
+		logger.FatalError(err)
 	}
 
-	err = runService(config)
+	err = runService(config, logger)
 	if err == server.ErrStopped {
 		logger.Info("service is successfully stopped")
 	} else if err != nil {
-		logger.Fatal(err)
+		logger.FatalError(err)
 	}
 }
 
-func runService(config *config) error {
+func runService(config *config, logger log.MainLogger) error {
 	dsn := mysql.DSN{
 		User:     config.DatabaseUser,
 		Password: config.DatabasePassword,
@@ -50,7 +55,7 @@ func runService(config *config) error {
 	connector := mysql.NewConnector()
 	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
 	if err != nil {
-		logger.WithError(err).Fatal("failed to migrate")
+		logger.Error(err, "failed to migrate")
 	}
 
 	err = connector.Open(dsn, config.MaxDatabaseConnections)
@@ -117,6 +122,10 @@ func runService(config *config) error {
 	})
 
 	return serverHub.Run()
+}
+
+func initLogger() (log.MainLogger, error) {
+	return jsonlog.NewLogger(&jsonlog.Config{AppName: appID}), nil
 }
 
 func listenForKillSignal(stopChan chan<- struct{}) {
