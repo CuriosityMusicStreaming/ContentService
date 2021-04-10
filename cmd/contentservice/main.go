@@ -73,7 +73,7 @@ func runService(config *config, logger log.MainLogger) error {
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)
 
-	baseServer := grpc.NewServer(grpc.UnaryInterceptor(makeGRPCUnaryInterceptor()))
+	baseServer := grpc.NewServer(grpc.UnaryInterceptor(makeGRPCUnaryInterceptor(logger)))
 	contentservice.RegisterContentServiceServer(baseServer, serviceApi)
 
 	serverHub.AddServer(server.NewGrpcServer(
@@ -106,7 +106,7 @@ func runService(config *config, logger log.MainLogger) error {
 			}).Methods(http.MethodGet)
 
 			httpServer = &http.Server{
-				Handler:      transport.NewLoggingMiddleware(router),
+				Handler:      transport.NewLoggingMiddleware(router, logger),
 				Addr:         config.ServeRESTAddress,
 				WriteTimeout: 15 * time.Second,
 				ReadTimeout:  15 * time.Second,
@@ -137,8 +137,8 @@ func listenForKillSignal(stopChan chan<- struct{}) {
 	}()
 }
 
-func makeGRPCUnaryInterceptor() grpc.UnaryServerInterceptor {
-	loggerInterceptor := transport.NewLoggerServerInterceptor()
+func makeGRPCUnaryInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
+	loggerInterceptor := transport.NewLoggerServerInterceptor(logger)
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		resp, err = loggerInterceptor(ctx, req, info, handler)
 		return resp, err
