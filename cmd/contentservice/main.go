@@ -7,6 +7,7 @@ import (
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
@@ -57,13 +58,18 @@ func runService(config *config, logger log.MainLogger) error {
 	if err != nil {
 		logger.Error(err, "failed to migrate")
 	}
-
 	err = connector.Open(dsn, config.MaxDatabaseConnections)
 	if err != nil {
 		return err
 	}
-
 	defer connector.Close()
+
+	amqpConnection := amqp.NewAMQPConnection(&amqp.Config{
+		User:     config.AMQPUser,
+		Password: config.AMQPPassword,
+		Host:     config.AMQPHost,
+	}, logger)
+	defer amqpConnection.Stop()
 
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
