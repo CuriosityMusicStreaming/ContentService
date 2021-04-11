@@ -83,9 +83,8 @@ func runService(config *config, logger log.MainLogger) error {
 
 	serverHub.AddServer(server.NewGrpcServer(
 		baseServer,
-		server.GrpcServerConfig{
-			ServeAddress: config.ServeGRPCAddress,
-		}),
+		server.GrpcServerConfig{ServeAddress: config.ServeGRPCAddress},
+		logger),
 	)
 
 	ctx := context.Background()
