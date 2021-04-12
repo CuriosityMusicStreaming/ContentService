@@ -11,7 +11,7 @@ build: generate modules
 
 .PHONY: generate
 generate:
-	$(foreach path,$(APP_PROTO_FILES),bin/generate-grpc.sh "$(path)")
+	bin/generate-grpc.sh $(foreach path,$(APP_PROTO_FILES),"$(path)")
 
 .PHONY: modules
 modules:
