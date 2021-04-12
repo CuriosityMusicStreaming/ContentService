@@ -6,7 +6,6 @@ import "google/protobuf/empty.proto";
 
 option go_package = ".;contentservice";
 
-
 service ContentService {
     rpc AddContent (AddContentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
@@ -14,14 +13,33 @@ service ContentService {
             body: "*"
         };
     }
+
+    rpc DeleteContent (DeleteContentRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/cs/v1/delete-content"
+            body: "*"
+        };
+    }
 }
 
 message AddContentRequest {
     string Name = 1;
-    ContentType Type = 2;
+    string userToken = 2;
+    ContentType Type = 3;
+    ContentAvailabilityType availabilityType = 4;
 }
 
 enum ContentType {
     Song = 0;
     Podcast = 1;
+}
+
+enum ContentAvailabilityType {
+    Public = 0;
+    Private = 1;
+}
+
+message DeleteContentRequest {
+    string contentID = 1;
+    string userToken = 2;
 }

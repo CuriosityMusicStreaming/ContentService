@@ -1,6 +1,15 @@
 package service
 
-import "contentservice/pkg/contentservice/domain"
+import (
+	"contentservice/pkg/contentservice/domain"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+)
+
+var (
+	ErrOnlyCreatorCanAddContent = errors.New("only creator can add content")
+)
 
 type ContentType int
 
@@ -9,8 +18,16 @@ const (
 	ContentTypePodcast = ContentType(domain.ContentTypePodcast)
 )
 
+type ContentAvailabilityType int
+
+const (
+	ContentAvailabilityTypePublic  = ContentAvailabilityType(domain.ContentAvailabilityTypePublic)
+	ContentAvailabilityTypePrivate = ContentAvailabilityType(domain.ContentAvailabilityTypePrivate)
+)
+
 type ContentService interface {
-	AddContent(name string, contentType ContentType) error
+	AddContent(name string, userDescriptor auth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error
+	DeleteContent(contentID uuid.UUID, descriptor auth.UserDescriptor) error
 }
 
 func NewContentService(domainService domain.ContentService) ContentService {
@@ -23,6 +40,14 @@ type contentService struct {
 	domainService domain.ContentService
 }
 
-func (service *contentService) AddContent(name string, contentType ContentType) error {
-	return service.domainService.AddContent(name, domain.ContentType(contentType))
+func (service *contentService) AddContent(name string, userDescriptor auth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error {
+	if userDescriptor.Role != auth.Creator {
+		return ErrOnlyCreatorCanAddContent
+	}
+
+	return service.domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+}
+
+func (service *contentService) DeleteContent(contentID uuid.UUID, descriptor auth.UserDescriptor) error {
+	return service.domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(descriptor.UserID))
 }

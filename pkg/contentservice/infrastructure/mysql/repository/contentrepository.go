@@ -2,17 +2,20 @@ package repository
 
 import (
 	"contentservice/pkg/contentservice/domain"
+	"database/sql"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
-func NewContentRepository() domain.ContentRepository {
+func NewContentRepository(db *sqlx.DB) domain.ContentRepository {
 	return &contentRepository{
-		contents: map[domain.ContentID]domain.Content{},
+		client: db,
 	}
 }
 
 type contentRepository struct {
-	contents map[domain.ContentID]domain.Content
+	client *sqlx.DB
 }
 
 func (repo *contentRepository) NewID() domain.ContentID {
@@ -20,25 +23,57 @@ func (repo *contentRepository) NewID() domain.ContentID {
 }
 
 func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content, error) {
-	content, ok := repo.contents[contentID]
-	if !ok {
-		return domain.Content{}, domain.ErrContentNotFound
+	const selectSql = `SELECT * from content WHERE content_id = ?`
+
+	binaryUUID, err := uuid.UUID(contentID).MarshalBinary()
+	if err != nil {
+		return domain.Content{}, err
 	}
 
-	return content, nil
+	var content sqlxContent
+
+	err = repo.client.Get(&content, selectSql, binaryUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.Content{}, domain.ErrContentNotFound
+		}
+		return domain.Content{}, errors.WithStack(err)
+	}
+
+	return domain.Content{
+		ID:          domain.ContentID(content.ContentID),
+		Name:        content.Name,
+		ContentType: domain.ContentType(content.Type),
+	}, nil
 }
 
 func (repo *contentRepository) Store(content domain.Content) error {
-	_, ok := repo.contents[content.ID]
-	if ok {
-		return nil
+	const insertSql = `INSERT INTO content VALUES(?, ?, ?)`
+
+	binaryUUID, err := uuid.UUID(content.ID).MarshalBinary()
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
-	repo.contents[content.ID] = content
-
-	return nil
+	_, err = repo.client.Exec(insertSql, binaryUUID, content.Name, content.ContentType)
+	return err
 }
 
 func (repo *contentRepository) Remove(contentID domain.ContentID) error {
-	return nil
+	const deleteSql = `DELETE FROM content WHERE content_id = ?`
+
+	binaryUUID, err := uuid.UUID(contentID).MarshalBinary()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = repo.client.Exec(deleteSql, binaryUUID)
+	return err
+
+}
+
+type sqlxContent struct {
+	ContentID uuid.UUID `db:"content_id"`
+	Name      string    `db:"name"`
+	Type      int       `db:"type"`
 }

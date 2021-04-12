@@ -7,6 +7,8 @@ import (
 
 type ContentID uuid.UUID
 
+type AuthorID uuid.UUID
+
 type ContentType int
 
 const (
@@ -14,10 +16,19 @@ const (
 	ContentTypePodcast
 )
 
+type ContentAvailabilityType int
+
+const (
+	ContentAvailabilityTypePublic ContentAvailabilityType = iota
+	ContentAvailabilityTypePrivate
+)
+
 type Content struct {
-	ID   ContentID
-	Name string
+	ID       ContentID
+	Name     string
+	AuthorID AuthorID
 	ContentType
+	AvailabilityType ContentAvailabilityType
 }
 
 type ContentRepository interface {

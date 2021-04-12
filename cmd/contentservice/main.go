@@ -73,7 +73,7 @@ func runService(config *config, logger log.MainLogger) error {
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
-	container := infrastructure.NewDependencyContainer()
+	container := infrastructure.NewDependencyContainer(connector.Client())
 
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)

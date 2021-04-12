@@ -1,7 +1,14 @@
 package domain
 
+import "github.com/pkg/errors"
+
+var (
+	ErrOnlyAuthorCanDeleteContent = errors.New("only author can delete content")
+)
+
 type ContentService interface {
-	AddContent(name string, contentType ContentType) error
+	AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) error
+	DeleteContent(contentID ContentID, authorID AuthorID) error
 }
 
 func NewContentService(repository ContentRepository) ContentService {
@@ -14,16 +21,31 @@ type contentService struct {
 	repo ContentRepository
 }
 
-func (c *contentService) AddContent(name string, contentType ContentType) error {
-	id := c.repo.NewID()
-	err := c.repo.Store(Content{
-		ID:          id,
-		Name:        name,
-		ContentType: contentType,
+func (service *contentService) AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) error {
+	id := service.repo.NewID()
+	err := service.repo.Store(Content{
+		ID:               id,
+		Name:             name,
+		AuthorID:         authorID,
+		ContentType:      contentType,
+		AvailabilityType: availabilityType,
 	})
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (service *contentService) DeleteContent(contentID ContentID, authorID AuthorID) error {
+	content, err := service.repo.Find(contentID)
+	if err != nil {
+		return err
+	}
+
+	if content.AuthorID != authorID {
+		return ErrOnlyAuthorCanDeleteContent
+	}
+
+	return service.repo.Remove(content.ID)
 }
