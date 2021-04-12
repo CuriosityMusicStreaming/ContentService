@@ -64,6 +64,30 @@ func (server *contentServiceServer) DeleteContent(_ context.Context, req *api.De
 	return &emptypb.Empty{}, err
 }
 
+func (server *contentServiceServer) SetContentAvailabilityType(_ context.Context, req *api.SetContentAvailabilityTypeRequest) (*emptypb.Empty, error) {
+	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	contentID, err := uuid.Parse(req.ContentID)
+	if err != nil {
+		return nil, err
+	}
+
+	availabilityType, ok := apiToContentAvailabilityTypeMap[req.NewContentAvailabilityType]
+	if !ok {
+		return nil, ErrUnknownContentAvailabilityType
+	}
+
+	err = server.container.ContentService().SetContentAvailabilityType(contentID, userDesc, availabilityType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, err
+}
+
 var apiToContentTypeMap = map[api.ContentType]service.ContentType{
 	api.ContentType_Song:    service.ContentTypeSong,
 	api.ContentType_Podcast: service.ContentTypePodcast,

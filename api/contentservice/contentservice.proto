@@ -20,6 +20,13 @@ service ContentService {
             body: "*"
         };
     }
+
+    rpc SetContentAvailabilityType (SetContentAvailabilityTypeRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/api/cs/v1/set-content-availability-type"
+            body: "*"
+        };
+    }
 }
 
 message AddContentRequest {
@@ -42,4 +49,10 @@ enum ContentAvailabilityType {
 message DeleteContentRequest {
     string contentID = 1;
     string userToken = 2;
+}
+
+message SetContentAvailabilityTypeRequest {
+    string contentID = 1;
+    ContentAvailabilityType newContentAvailabilityType = 2;
+    string userToken = 3;
 }

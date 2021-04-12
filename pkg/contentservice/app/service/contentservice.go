@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrOnlyCreatorCanAddContent = errors.New("only creator can add content")
+	ErrOnlyCreatorCanAddContent    = errors.New("only creator can add content")
+	ErrOnlyCreatorCanManageContent = errors.New("only creator can manage content")
 )
 
 type ContentType int
@@ -27,7 +28,8 @@ const (
 
 type ContentService interface {
 	AddContent(name string, userDescriptor auth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error
-	DeleteContent(contentID uuid.UUID, descriptor auth.UserDescriptor) error
+	DeleteContent(contentID uuid.UUID, userDescriptor auth.UserDescriptor) error
+	SetContentAvailabilityType(contentID uuid.UUID, descriptor auth.UserDescriptor, availabilityType ContentAvailabilityType) error
 }
 
 func NewContentService(domainService domain.ContentService) ContentService {
@@ -48,6 +50,20 @@ func (service *contentService) AddContent(name string, userDescriptor auth.UserD
 	return service.domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
 }
 
-func (service *contentService) DeleteContent(contentID uuid.UUID, descriptor auth.UserDescriptor) error {
-	return service.domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(descriptor.UserID))
+func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor auth.UserDescriptor) error {
+	if userDescriptor.Role != auth.Creator {
+		return ErrOnlyCreatorCanManageContent
+	}
+	return service.domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(userDescriptor.UserID))
+}
+
+func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, userDescriptor auth.UserDescriptor, availabilityType ContentAvailabilityType) error {
+	if userDescriptor.Role != auth.Creator {
+		return ErrOnlyCreatorCanManageContent
+	}
+	return service.domainService.SetContentAvailabilityType(
+		domain.ContentID(contentID),
+		domain.AuthorID(userDescriptor.UserID),
+		domain.ContentAvailabilityType(availabilityType),
+	)
 }
