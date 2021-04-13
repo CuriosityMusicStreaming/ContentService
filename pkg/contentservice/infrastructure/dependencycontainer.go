@@ -3,8 +3,10 @@ package infrastructure
 import (
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/domain"
+	"contentservice/pkg/contentservice/infrastructure/integration"
 	"contentservice/pkg/contentservice/infrastructure/mysql/repository"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -13,14 +15,18 @@ type DependencyContainer interface {
 	UserDescriptorSerializer() auth.UserDescriptorSerializer
 }
 
-func NewDependencyContainer(client *sqlx.DB) DependencyContainer {
+func NewDependencyContainer(client *sqlx.DB, logger logger.Logger) DependencyContainer {
 	return &dependencyContainer{
-		client: client,
+		client:          client,
+		logger:          logger,
+		eventDispatcher: eventDispatcher(logger),
 	}
 }
 
 type dependencyContainer struct {
-	client *sqlx.DB
+	client          *sqlx.DB
+	logger          logger.Logger
+	eventDispatcher domain.EventDispatcher
 }
 
 func (container *dependencyContainer) ContentService() service.ContentService {
@@ -32,9 +38,20 @@ func (container dependencyContainer) UserDescriptorSerializer() auth.UserDescrip
 }
 
 func (container *dependencyContainer) domainContentService() domain.ContentService {
-	return domain.NewContentService(container.contentRepository())
+	return domain.NewContentService(container.contentRepository(), container.eventDispatcher)
 }
 
 func (container *dependencyContainer) contentRepository() domain.ContentRepository {
 	return repository.NewContentRepository(container.client)
+}
+
+func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
+	eventPublisher := domain.NewEventPublisher()
+
+	{
+		handler := integration.NewIntegrationEventHandler(logger)
+		eventPublisher.Subscribe(handler)
+	}
+
+	return eventPublisher
 }

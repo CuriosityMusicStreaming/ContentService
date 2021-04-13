@@ -6,7 +6,7 @@ import (
 
 var (
 	ErrOnlyAuthorCanDeleteContent = errors.New("only author can delete content")
-	ErrOnlyAuthorCanMaangeContent = errors.New("only author can manage content")
+	ErrOnlyAuthorCanManageContent = errors.New("only author can manage content")
 )
 
 type ContentService interface {
@@ -15,14 +15,16 @@ type ContentService interface {
 	SetContentAvailabilityType(contentID ContentID, authorID AuthorID, availabilityType ContentAvailabilityType) error
 }
 
-func NewContentService(repository ContentRepository) ContentService {
+func NewContentService(repository ContentRepository, dispatcher EventDispatcher) ContentService {
 	return &contentService{
-		repo: repository,
+		repo:            repository,
+		eventDispatcher: dispatcher,
 	}
 }
 
 type contentService struct {
-	repo ContentRepository
+	repo            ContentRepository
+	eventDispatcher EventDispatcher
 }
 
 func (service *contentService) AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) error {
@@ -51,7 +53,12 @@ func (service *contentService) DeleteContent(contentID ContentID, authorID Autho
 		return ErrOnlyAuthorCanDeleteContent
 	}
 
-	return service.repo.Remove(content.ID)
+	err = service.repo.Remove(content.ID)
+	if err != nil {
+		return err
+	}
+
+	return service.eventDispatcher.Dispatch(ContentDeleted{ContentID: contentID})
 }
 
 func (service *contentService) SetContentAvailabilityType(contentID ContentID, authorID AuthorID, availabilityType ContentAvailabilityType) error {
@@ -61,7 +68,7 @@ func (service *contentService) SetContentAvailabilityType(contentID ContentID, a
 	}
 
 	if content.AuthorID != authorID {
-		return ErrOnlyAuthorCanMaangeContent
+		return ErrOnlyAuthorCanManageContent
 	}
 
 	if content.AvailabilityType == availabilityType {
@@ -71,6 +78,9 @@ func (service *contentService) SetContentAvailabilityType(contentID ContentID, a
 	content.AvailabilityType = availabilityType
 
 	err = service.repo.Store(content)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return service.eventDispatcher.Dispatch(ContentContentAvailabilityTypeChanged{ContentID: contentID})
 }
