@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/infrastructure"
 	"context"
@@ -88,6 +89,38 @@ func (server *contentServiceServer) SetContentAvailabilityType(_ context.Context
 	return &emptypb.Empty{}, err
 }
 
+func (server *contentServiceServer) GetContentList(_ context.Context, req *api.GetContentListRequest) (*api.GetContentListResponse, error) {
+	queryService := server.container.ContentQueryService()
+
+	contentIDs := make([]uuid.UUID, len(req.ContentIDs))
+	for _, contentID := range req.ContentIDs {
+		contentUUID, err := uuid.Parse(contentID)
+		if err != nil {
+			return nil, err
+		}
+
+		contentIDs = append(contentIDs, contentUUID)
+	}
+
+	list, err := queryService.ContentList(query.ContentSpecification{ContentIDs: contentIDs})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*api.Content, len(list))
+	for _, contentView := range list {
+		res = append(res, &api.Content{
+			ContentID:        contentView.ID.String(),
+			Name:             contentView.Name,
+			AuthorID:         contentView.AuthorID.String(),
+			Type:             contentTypeToApiMap[contentView.ContentType],
+			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
+		})
+	}
+
+	return &api.GetContentListResponse{Contents: res}, nil
+}
+
 var apiToContentTypeMap = map[api.ContentType]service.ContentType{
 	api.ContentType_Song:    service.ContentTypeSong,
 	api.ContentType_Podcast: service.ContentTypePodcast,
@@ -96,6 +129,16 @@ var apiToContentTypeMap = map[api.ContentType]service.ContentType{
 var apiToContentAvailabilityTypeMap = map[api.ContentAvailabilityType]service.ContentAvailabilityType{
 	api.ContentAvailabilityType_Public:  service.ContentAvailabilityTypePublic,
 	api.ContentAvailabilityType_Private: service.ContentAvailabilityTypePrivate,
+}
+
+var contentTypeToApiMap = map[service.ContentType]api.ContentType{
+	service.ContentTypeSong:    api.ContentType_Song,
+	service.ContentTypePodcast: api.ContentType_Podcast,
+}
+
+var contentAvailabilityTypeToApiMap = map[service.ContentAvailabilityType]api.ContentAvailabilityType{
+	service.ContentAvailabilityTypePublic:  api.ContentAvailabilityType_Public,
+	service.ContentAvailabilityTypePrivate: api.ContentAvailabilityType_Private,
 }
 
 var (

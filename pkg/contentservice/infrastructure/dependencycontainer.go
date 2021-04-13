@@ -1,9 +1,11 @@
 package infrastructure
 
 import (
+	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/domain"
 	"contentservice/pkg/contentservice/infrastructure/integration"
+	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
 	"contentservice/pkg/contentservice/infrastructure/mysql/repository"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
@@ -12,6 +14,7 @@ import (
 
 type DependencyContainer interface {
 	ContentService() service.ContentService
+	ContentQueryService() query.ContentQueryService
 	UserDescriptorSerializer() auth.UserDescriptorSerializer
 }
 
@@ -31,6 +34,10 @@ type dependencyContainer struct {
 
 func (container *dependencyContainer) ContentService() service.ContentService {
 	return service.NewContentService(container.domainContentService())
+}
+
+func (container *dependencyContainer) ContentQueryService() query.ContentQueryService {
+	return infrastructurequery.NewContentQueryService(container.client)
 }
 
 func (container dependencyContainer) UserDescriptorSerializer() auth.UserDescriptorSerializer {
