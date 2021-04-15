@@ -48,7 +48,11 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 }
 
 func (repo *contentRepository) Store(content domain.Content) error {
-	const insertSql = `INSERT INTO content VALUES(?, ?, ?)`
+	const insertSql = `
+		INSERT INTO content (content_id, name, author_id, type, availability_type) VALUES(?, ?, ?, ?, ?)
+		ON DUPLICATE KEY 
+		UPDATE content_id=VALUES(content_id), name=VALUES(name), author_id=VALUES(author_id), type=VALUES(type), availability_type=VALUES(availability_type)
+	`
 
 	binaryUUID, err := uuid.UUID(content.ID).MarshalBinary()
 	if err != nil {
