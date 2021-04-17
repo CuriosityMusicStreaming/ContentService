@@ -4,16 +4,17 @@ import (
 	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
 	"fmt"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
-func NewContentQueryService(client *sqlx.DB) query.ContentQueryService {
+func NewContentQueryService(client mysql.Client) query.ContentQueryService {
 	return &contentQueryService{client: client}
 }
 
 type contentQueryService struct {
-	client *sqlx.DB
+	client mysql.Client
 }
 
 func (service *contentQueryService) ContentList(spec query.ContentSpecification) ([]query.ContentView, error) {

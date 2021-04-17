@@ -3,19 +3,19 @@ package repository
 import (
 	"contentservice/pkg/contentservice/domain"
 	"database/sql"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
-func NewContentRepository(db *sqlx.DB) domain.ContentRepository {
+func NewContentRepository(client mysql.Client) domain.ContentRepository {
 	return &contentRepository{
-		client: db,
+		client: client,
 	}
 }
 
 type contentRepository struct {
-	client *sqlx.DB
+	client mysql.Client
 }
 
 func (repo *contentRepository) NewID() domain.ContentID {

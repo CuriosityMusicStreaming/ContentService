@@ -39,9 +39,9 @@ service ContentService {
 
 message AddContentRequest {
     string name = 1;
-    string userToken = 2;
-    ContentType type = 3;
-    ContentAvailabilityType availabilityType = 4;
+    ContentType type = 2;
+    ContentAvailabilityType availabilityType = 3;
+    string userID = 4;
 }
 
 enum ContentType {

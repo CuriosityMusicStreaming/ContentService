@@ -32,38 +32,66 @@ type ContentService interface {
 	SetContentAvailabilityType(contentID uuid.UUID, descriptor auth.UserDescriptor, availabilityType ContentAvailabilityType) error
 }
 
-func NewContentService(domainService domain.ContentService) ContentService {
+func NewContentService(factory UnitOfWorkFactory, eventDispatcher domain.EventDispatcher) ContentService {
 	return &contentService{
-		domainService: domainService,
+		unitOfWorkFactory: factory,
+		eventDispatcher:   eventDispatcher,
 	}
 }
 
 type contentService struct {
-	domainService domain.ContentService
+	unitOfWorkFactory UnitOfWorkFactory
+	eventDispatcher   domain.EventDispatcher
 }
 
 func (service *contentService) AddContent(name string, userDescriptor auth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error {
-	if userDescriptor.Role != auth.Creator {
-		return ErrOnlyCreatorCanAddContent
-	}
+	//if userDescriptor.Role != auth.Creator {
+	//	return ErrOnlyCreatorCanAddContent
+	//}
 
-	return service.domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
+
+		return domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+	})
 }
 
 func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor auth.UserDescriptor) error {
 	if userDescriptor.Role != auth.Creator {
 		return ErrOnlyCreatorCanManageContent
 	}
-	return service.domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(userDescriptor.UserID))
+
+	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
+
+		return domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(userDescriptor.UserID))
+	})
 }
 
 func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, userDescriptor auth.UserDescriptor, availabilityType ContentAvailabilityType) error {
 	if userDescriptor.Role != auth.Creator {
 		return ErrOnlyCreatorCanManageContent
 	}
-	return service.domainService.SetContentAvailabilityType(
-		domain.ContentID(contentID),
-		domain.AuthorID(userDescriptor.UserID),
-		domain.ContentAvailabilityType(availabilityType),
-	)
+
+	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
+
+		return domainService.SetContentAvailabilityType(
+			domain.ContentID(contentID),
+			domain.AuthorID(userDescriptor.UserID),
+			domain.ContentAvailabilityType(availabilityType),
+		)
+	})
+}
+
+func (service *contentService) executeInUnitOfWork(f func(provider RepositoryProvider) error) error {
+	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork("")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = unitOfWork.Complete(err)
+	}()
+	err = f(unitOfWork)
+	return err
 }
