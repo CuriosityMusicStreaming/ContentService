@@ -59,7 +59,12 @@ func (repo *contentRepository) Store(content domain.Content) error {
 		return errors.WithStack(err)
 	}
 
-	_, err = repo.client.Exec(insertSql, binaryUUID, content.Name, content.ContentType)
+	authorBinaryUUID, err := uuid.UUID(content.AuthorID).MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.client.Exec(insertSql, binaryUUID, content.Name, authorBinaryUUID, content.ContentType, content.AvailabilityType)
 	return err
 }
 
