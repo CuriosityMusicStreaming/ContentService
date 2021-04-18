@@ -2,6 +2,7 @@ package main
 
 import (
 	"contentservice/api/contentservice"
+	userserviceapi "contentservice/api/userservice"
 	migrationsembedder "contentservice/data/mysql"
 	"contentservice/pkg/contentservice/infrastructure"
 	"contentservice/pkg/contentservice/infrastructure/transport"
@@ -73,7 +74,16 @@ func runService(config *config, logger log.MainLogger) error {
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
-	container := infrastructure.NewDependencyContainer(connector.TransactionalClient(), logger)
+	userServiceClient, err := initUserServiceClient(config)
+	if err != nil {
+		return err
+	}
+
+	container := infrastructure.NewDependencyContainer(
+		connector.TransactionalClient(),
+		logger,
+		userServiceClient,
+	)
 
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)
@@ -147,4 +157,17 @@ func makeGRPCUnaryInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 		resp, err = loggerInterceptor(ctx, req, info, handler)
 		return resp, err
 	}
+}
+
+func initUserServiceClient(config *config) (userserviceapi.UserServiceClient, error) {
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
+
+	conn, err := grpc.Dial(config.UserServiceGRPCAddress, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return userserviceapi.NewUserServiceClient(conn), nil
 }
