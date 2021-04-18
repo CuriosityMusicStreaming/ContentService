@@ -4,12 +4,6 @@ import (
 	"contentservice/pkg/contentservice/domain"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
-)
-
-var (
-	ErrOnlyCreatorCanAddContent    = errors.New("only creator can add content")
-	ErrOnlyCreatorCanManageContent = errors.New("only creator can manage content")
 )
 
 type ContentType int
@@ -45,10 +39,6 @@ type contentService struct {
 }
 
 func (service *contentService) AddContent(name string, userDescriptor auth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error {
-	//if userDescriptor.Role != auth.Creator {
-	//	return ErrOnlyCreatorCanAddContent
-	//}
-
 	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
@@ -57,10 +47,6 @@ func (service *contentService) AddContent(name string, userDescriptor auth.UserD
 }
 
 func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor auth.UserDescriptor) error {
-	if userDescriptor.Role != auth.Creator {
-		return ErrOnlyCreatorCanManageContent
-	}
-
 	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
@@ -69,10 +55,6 @@ func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor
 }
 
 func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, userDescriptor auth.UserDescriptor, availabilityType ContentAvailabilityType) error {
-	if userDescriptor.Role != auth.Creator {
-		return ErrOnlyCreatorCanManageContent
-	}
-
 	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 

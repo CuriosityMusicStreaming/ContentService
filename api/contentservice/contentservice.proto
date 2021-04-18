@@ -41,7 +41,7 @@ message AddContentRequest {
     string name = 1;
     ContentType type = 2;
     ContentAvailabilityType availabilityType = 3;
-    string userID = 4;
+    string userToken = 4;
 }
 
 enum ContentType {

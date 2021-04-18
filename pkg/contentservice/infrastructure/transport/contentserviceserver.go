@@ -5,7 +5,6 @@ import (
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/infrastructure"
 	"context"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -24,16 +23,10 @@ type contentServiceServer struct {
 }
 
 func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddContentRequest) (*emptypb.Empty, error) {
-	userID, err := uuid.Parse(req.UserID)
+	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
 	if err != nil {
 		return nil, err
 	}
-
-	userDesc := auth.UserDescriptor{UserID: userID}
-	//userDesc, err := server.container.UserDescriptorSerializer().Deserialize()
-	//if err != nil {
-	//	return nil, err
-	//}
 
 	contentType, ok := apiToContentTypeMap[req.Type]
 	if !ok {
