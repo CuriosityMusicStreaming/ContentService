@@ -51,7 +51,8 @@ func (service *contentService) AddContent(name string, userDescriptor commonauth
 	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
-		return domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+		_, err := domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+		return err
 	})
 }
 

@@ -10,7 +10,7 @@ var (
 )
 
 type ContentService interface {
-	AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) error
+	AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error)
 	DeleteContent(contentID ContentID, authorID AuthorID) error
 	SetContentAvailabilityType(contentID ContentID, authorID AuthorID, availabilityType ContentAvailabilityType) error
 }
@@ -27,7 +27,7 @@ type contentService struct {
 	eventDispatcher EventDispatcher
 }
 
-func (service *contentService) AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) error {
+func (service *contentService) AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error) {
 	id := service.repo.NewID()
 	err := service.repo.Store(Content{
 		ID:               id,
@@ -37,10 +37,10 @@ func (service *contentService) AddContent(name string, authorID AuthorID, conten
 		AvailabilityType: availabilityType,
 	})
 	if err != nil {
-		return err
+		return ContentID{}, err
 	}
 
-	return nil
+	return id, nil
 }
 
 func (service *contentService) DeleteContent(contentID ContentID, authorID AuthorID) error {
