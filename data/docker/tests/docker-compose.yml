@@ -1,0 +1,62 @@
+version: "3.3"
+
+services:
+    contentservice-api-client:
+        build:
+            context: .
+            dockerfile: data/docker/tests/Dockerfile.tests
+        depends_on:
+            - contentservice
+
+    contentservice:
+        image: ${REGISTRY}-contentservice:master
+        container_name: contentservice
+        depends_on:
+            - db
+            - rabbitmq
+        environment:
+            CONTENTSERVICE_DSN: root:1234@/contentservice
+            SERVE_REST_ADDRESS: :8001
+            SERVE_GRPC_ADDRESS: :8002
+            DB_USER: root
+            DB_PASSWORD: 1234
+            DB_HOST: contentservice-db
+            DB_NAME: contentservice
+            AMQP_HOST: rabbitmq
+            AMQP_USER: guest
+            AMQP_PASSWORD: guest
+            USER_SERVICE_GRPC_ADDRESS: userservice:8002
+
+    userservice:
+        image: ${REGISTRY}-userservice:master
+        container_name: userservice
+        depends_on:
+            - db
+        environment:
+            CONTENTSERVICE_DSN: root:1234@/userservice
+            SERVE_REST_ADDRESS: :8001
+            SERVE_GRPC_ADDRESS: :8002
+
+    db:
+        image: percona
+        container_name: services-db
+        environment:
+            MYSQL_ROOT_PASSWORD: 1234
+        ports:
+            - 3306:3306
+        healthcheck:
+            test: mysql -h127.0.0.1 -uroot -p1234 -e 'SELECT 1'
+            interval: 20s
+            timeout: 1s
+        networks:
+            default:
+                aliases:
+                    - contentservice-db
+                    - userservice-db
+
+    rabbitmq:
+        image: "rabbitmq:3.8-management"
+        container_name: services-rabbitmq
+        hostname: services-rabbitmq
+        ports:
+            - "15672:15672"
