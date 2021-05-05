@@ -26,7 +26,7 @@ func (service *contentQueryService) ContentList(spec query.ContentSpecification)
 
 	var contents []sqlxContent
 
-	err = service.client.Select(&contents, selectSql, args)
+	err = service.client.Select(&contents, selectSql, args...)
 	if err != nil {
 		return nil, err
 	}
