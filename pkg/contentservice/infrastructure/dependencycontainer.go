@@ -17,7 +17,8 @@ import (
 
 type DependencyContainer interface {
 	ContentService() service.ContentService
-	ContentQueryService() query.ContentQueryService
+	TrustedContentQueryService() query.ContentQueryService
+	AuthorizedContentQueryService(userDescriptor commonauth.UserDescriptor) query.ContentQueryService
 	UserDescriptorSerializer() commonauth.UserDescriptorSerializer
 }
 
@@ -51,8 +52,12 @@ func (container *dependencyContainer) ContentService() service.ContentService {
 	)
 }
 
-func (container *dependencyContainer) ContentQueryService() query.ContentQueryService {
+func (container *dependencyContainer) TrustedContentQueryService() query.ContentQueryService {
 	return infrastructurequery.NewContentQueryService(container.client)
+}
+
+func (container *dependencyContainer) AuthorizedContentQueryService(userDescriptor commonauth.UserDescriptor) query.ContentQueryService {
+	return query.NewAuthorizedContentQueryService(container.TrustedContentQueryService(), userDescriptor)
 }
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {

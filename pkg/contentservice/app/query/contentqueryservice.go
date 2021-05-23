@@ -15,6 +15,7 @@ type ContentView struct {
 
 type ContentSpecification struct {
 	ContentIDs []uuid.UUID
+	AuthorIDs  []uuid.UUID
 }
 
 type ContentQueryService interface {

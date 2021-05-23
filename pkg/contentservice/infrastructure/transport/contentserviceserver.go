@@ -90,7 +90,8 @@ func (server *contentServiceServer) SetContentAvailabilityType(_ context.Context
 }
 
 func (server *contentServiceServer) GetContentList(_ context.Context, req *api.GetContentListRequest) (*api.GetContentListResponse, error) {
-	queryService := server.container.ContentQueryService()
+	// TODO: add correct user descriptor or delete entire method
+	queryService := server.container.AuthorizedContentQueryService(struct{ UserID uuid.UUID }{UserID: [16]byte{}})
 
 	contentIDs := make([]uuid.UUID, len(req.ContentIDs))
 	for _, contentID := range req.ContentIDs {
@@ -107,7 +108,7 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 		return nil, err
 	}
 
-	res := make([]*api.Content, len(list))
+	res := make([]*api.Content, 0, len(list))
 	for _, contentView := range list {
 		res = append(res, &api.Content{
 			ContentID:        contentView.ID.String(),
@@ -119,6 +120,35 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 	}
 
 	return &api.GetContentListResponse{Contents: res}, nil
+}
+
+func (server *contentServiceServer) GetAuthorContent(_ context.Context, req *api.GetAuthorContentRequest) (*api.GetAuthorContentResponse, error) {
+	userDescriptor, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	queryService := server.container.AuthorizedContentQueryService(userDescriptor)
+
+	list, err := queryService.ContentList(query.ContentSpecification{
+		AuthorIDs: []uuid.UUID{userDescriptor.UserID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*api.Content, 0, len(list))
+	for _, contentView := range list {
+		res = append(res, &api.Content{
+			ContentID:        contentView.ID.String(),
+			Name:             contentView.Name,
+			AuthorID:         contentView.AuthorID.String(),
+			Type:             contentTypeToApiMap[contentView.ContentType],
+			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
+		})
+	}
+
+	return &api.GetAuthorContentResponse{Contents: res}, nil
 }
 
 var apiToContentTypeMap = map[api.ContentType]service.ContentType{
