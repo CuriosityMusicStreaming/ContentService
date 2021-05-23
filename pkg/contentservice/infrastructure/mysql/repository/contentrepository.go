@@ -41,9 +41,11 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 	}
 
 	return domain.Content{
-		ID:          domain.ContentID(content.ContentID),
-		Name:        content.Name,
-		ContentType: domain.ContentType(content.Type),
+		ID:               domain.ContentID(content.ContentID),
+		Name:             content.Name,
+		AuthorID:         domain.AuthorID(content.AuthorID),
+		ContentType:      domain.ContentType(content.Type),
+		AvailabilityType: domain.ContentAvailabilityType(content.AvailabilityType),
 	}, nil
 }
 
@@ -82,7 +84,9 @@ func (repo *contentRepository) Remove(contentID domain.ContentID) error {
 }
 
 type sqlxContent struct {
-	ContentID uuid.UUID `db:"content_id"`
-	Name      string    `db:"name"`
-	Type      int       `db:"type"`
+	ContentID        uuid.UUID `db:"content_id"`
+	Name             string    `db:"name"`
+	AuthorID         uuid.UUID `db:"author_id"`
+	Type             int       `db:"type"`
+	AvailabilityType int       `db:"availability_type"`
 }
