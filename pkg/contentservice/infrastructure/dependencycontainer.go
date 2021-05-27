@@ -27,33 +27,35 @@ func NewDependencyContainer(
 	logger logger.Logger,
 	userServiceClient userserviceapi.UserServiceClient,
 ) DependencyContainer {
+
+	userDescriptorSerializer := userDescriptorSerializer()
+
 	return &dependencyContainer{
-		client:            client,
-		logger:            logger,
-		userServiceClient: userServiceClient,
-		eventDispatcher:   eventDispatcher(logger),
-		unitOfWorkFactory: unitOfWorkFactory(client),
+		contentService: contentService(
+			unitOfWorkFactory(client),
+			eventDispatcher(logger),
+			authorizationService(
+				userServiceClient,
+				userDescriptorSerializer,
+			),
+		),
+		trustedContentQueryService: trustedContentQueryService(client),
+		userDescriptorSerializer:   userDescriptorSerializer,
 	}
 }
 
 type dependencyContainer struct {
-	client            commonmysql.TransactionalClient
-	logger            logger.Logger
-	userServiceClient userserviceapi.UserServiceClient
-	eventDispatcher   domain.EventDispatcher
-	unitOfWorkFactory service.UnitOfWorkFactory
+	contentService             service.ContentService
+	trustedContentQueryService query.ContentQueryService
+	userDescriptorSerializer   commonauth.UserDescriptorSerializer
 }
 
 func (container *dependencyContainer) ContentService() service.ContentService {
-	return service.NewContentService(
-		container.unitOfWorkFactory,
-		container.eventDispatcher,
-		container.authorizationService(),
-	)
+	return container.contentService
 }
 
 func (container *dependencyContainer) TrustedContentQueryService() query.ContentQueryService {
-	return infrastructurequery.NewContentQueryService(container.client)
+	return container.trustedContentQueryService
 }
 
 func (container *dependencyContainer) AuthorizedContentQueryService(userDescriptor commonauth.UserDescriptor) query.ContentQueryService {
@@ -61,14 +63,7 @@ func (container *dependencyContainer) AuthorizedContentQueryService(userDescript
 }
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {
-	return commonauth.NewUserDescriptorSerializer()
-}
-
-func (container dependencyContainer) authorizationService() auth.AuthorizationService {
-	return userserviceadapter.NewAuthorizationService(
-		container.userServiceClient,
-		container.UserDescriptorSerializer(),
-	)
+	return container.userDescriptorSerializer
 }
 
 func unitOfWorkFactory(client commonmysql.TransactionalClient) service.UnitOfWorkFactory {
@@ -84,4 +79,34 @@ func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
 	}
 
 	return eventPublisher
+}
+
+func contentService(
+	unitOfWork service.UnitOfWorkFactory,
+	eventDispatcher domain.EventDispatcher,
+	authorizationService auth.AuthorizationService,
+) service.ContentService {
+	return service.NewContentService(
+		unitOfWork,
+		eventDispatcher,
+		authorizationService,
+	)
+}
+
+func trustedContentQueryService(client commonmysql.TransactionalClient) query.ContentQueryService {
+	return infrastructurequery.NewContentQueryService(client)
+}
+
+func userDescriptorSerializer() commonauth.UserDescriptorSerializer {
+	return commonauth.NewUserDescriptorSerializer()
+}
+
+func authorizationService(
+	userServiceClient userserviceapi.UserServiceClient,
+	userDescriptorSerializer commonauth.UserDescriptorSerializer,
+) auth.AuthorizationService {
+	return userserviceadapter.NewAuthorizationService(
+		userServiceClient,
+		userDescriptorSerializer,
+	)
 }
