@@ -1,0 +1,3 @@
+api:
+    contentservice: master
+    authorizationservice: master

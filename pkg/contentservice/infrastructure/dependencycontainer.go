@@ -1,7 +1,7 @@
 package infrastructure
 
 import (
-	userserviceapi "contentservice/api/userservice"
+	"contentservice/api/authorizationservice"
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
@@ -9,7 +9,7 @@ import (
 	"contentservice/pkg/contentservice/infrastructure/integration"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
-	"contentservice/pkg/contentservice/infrastructure/userserviceadapter"
+	"contentservice/pkg/contentservice/infrastructure/transport/client"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
@@ -25,7 +25,7 @@ type DependencyContainer interface {
 func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
 	logger logger.Logger,
-	userServiceClient userserviceapi.UserServiceClient,
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
 ) DependencyContainer {
 
 	userDescriptorSerializer := userDescriptorSerializer()
@@ -35,7 +35,7 @@ func NewDependencyContainer(
 			unitOfWorkFactory(client),
 			eventDispatcher(logger),
 			authorizationService(
-				userServiceClient,
+				authorizationServiceClient,
 				userDescriptorSerializer,
 			),
 		),
@@ -102,11 +102,11 @@ func userDescriptorSerializer() commonauth.UserDescriptorSerializer {
 }
 
 func authorizationService(
-	userServiceClient userserviceapi.UserServiceClient,
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
 	userDescriptorSerializer commonauth.UserDescriptorSerializer,
 ) auth.AuthorizationService {
-	return userserviceadapter.NewAuthorizationService(
-		userServiceClient,
+	return client.NewAuthorizationService(
+		authorizationServiceClient,
 		userDescriptorSerializer,
 	)
 }

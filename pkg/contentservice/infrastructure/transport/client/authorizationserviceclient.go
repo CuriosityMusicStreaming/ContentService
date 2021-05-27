@@ -1,25 +1,25 @@
-package userserviceadapter
+package client
 
 import (
-	userserviceapi "contentservice/api/userservice"
+	"contentservice/api/authorizationservice"
 	"contentservice/pkg/contentservice/app/auth"
 	"context"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 )
 
 func NewAuthorizationService(
-	userServiceApi userserviceapi.UserServiceClient,
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
 	userDescriptorSerializer commonauth.UserDescriptorSerializer,
 ) auth.AuthorizationService {
 	return &userServiceAuthorizationService{
-		userServiceApi:           userServiceApi,
-		userDescriptorSerializer: userDescriptorSerializer,
+		authorizationServiceClient: authorizationServiceClient,
+		userDescriptorSerializer:   userDescriptorSerializer,
 	}
 }
 
 type userServiceAuthorizationService struct {
-	userServiceApi           userserviceapi.UserServiceClient
-	userDescriptorSerializer commonauth.UserDescriptorSerializer
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient
+	userDescriptorSerializer   commonauth.UserDescriptorSerializer
 }
 
 func (service *userServiceAuthorizationService) CanAddContent(descriptor commonauth.UserDescriptor) (bool, error) {
@@ -29,7 +29,7 @@ func (service *userServiceAuthorizationService) CanAddContent(descriptor commona
 	}
 
 	ctx := context.Background()
-	resp, err := service.userServiceApi.CanAddContent(ctx, &userserviceapi.CanAddContentRequest{UserToken: userToken})
+	resp, err := service.authorizationServiceClient.CanAddContent(ctx, &authorizationservice.CanAddContentRequest{UserToken: userToken})
 	if err != nil {
 		return false, err
 	}

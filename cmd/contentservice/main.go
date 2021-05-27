@@ -1,8 +1,8 @@
 package main
 
 import (
+	"contentservice/api/authorizationservice"
 	"contentservice/api/contentservice"
-	userserviceapi "contentservice/api/userservice"
 	migrationsembedder "contentservice/data/mysql"
 	"contentservice/pkg/contentservice/infrastructure"
 	"contentservice/pkg/contentservice/infrastructure/transport"
@@ -74,7 +74,7 @@ func runService(config *config, logger log.MainLogger) error {
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
-	userServiceClient, err := initUserServiceClient(config)
+	authorizationServiceClient, err := initAuthorizationServiceClient(config)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func runService(config *config, logger log.MainLogger) error {
 	container := infrastructure.NewDependencyContainer(
 		connector.TransactionalClient(),
 		logger,
-		userServiceClient,
+		authorizationServiceClient,
 	)
 
 	serviceApi := transport.NewContentServiceServer(container)
@@ -158,15 +158,15 @@ func makeGRPCUnaryInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-func initUserServiceClient(config *config) (userserviceapi.UserServiceClient, error) {
+func initAuthorizationServiceClient(config *config) (authorizationservice.AuthorizationServiceClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
 	}
 
-	conn, err := grpc.Dial(config.UserServiceGRPCAddress, opts...)
+	conn, err := grpc.Dial(config.AuthorizationServiceGRPCAddress, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return userserviceapi.NewUserServiceClient(conn), nil
+	return authorizationservice.NewAuthorizationServiceClient(conn), nil
 }
