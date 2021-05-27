@@ -119,7 +119,7 @@ func runService(config *config, logger log.MainLogger) error {
 			}).Methods(http.MethodGet)
 
 			httpServer = &http.Server{
-				Handler:      transport.NewLoggingMiddleware(router, logger),
+				Handler:      router,
 				Addr:         config.ServeRESTAddress,
 				WriteTimeout: 15 * time.Second,
 				ReadTimeout:  15 * time.Second,
