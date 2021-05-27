@@ -81,7 +81,7 @@ func convertContents(contents []sqlxContent) []query.ContentView {
 func convertContent(content sqlxContent) query.ContentView {
 	return query.ContentView{
 		ID:               content.ID,
-		Name:             content.Name,
+		Title:            content.Title,
 		AuthorID:         content.AuthorID,
 		ContentType:      service.ContentType(content.ContentType),
 		AvailabilityType: service.ContentAvailabilityType(content.AvailabilityType),
@@ -99,7 +99,7 @@ func marshalUUIDS(uuids []uuid.UUID) [][]byte {
 
 type sqlxContent struct {
 	ID               uuid.UUID `db:"content_id"`
-	Name             string    `db:"name"`
+	Title            string    `db:"title"`
 	AuthorID         uuid.UUID `db:"author_id"`
 	ContentType      int       `db:"type"`
 	AvailabilityType int       `db:"availability_type"`

@@ -25,7 +25,7 @@ func TestContentService_AddContent(t *testing.T) {
 
 		content := mockRepo.contents[contentID]
 
-		assert.Equal(t, content.Name, contentName)
+		assert.Equal(t, content.Title, contentName)
 		assert.Equal(t, content.AuthorID, AuthorID(authorID))
 		assert.Equal(t, content.ContentType, contentType)
 		assert.Equal(t, content.AvailabilityType, availabilityType)

@@ -7,7 +7,7 @@ import (
 
 type ContentView struct {
 	ID               uuid.UUID
-	Name             string
+	Title            string
 	AuthorID         uuid.UUID
 	ContentType      service.ContentType
 	AvailabilityType service.ContentAvailabilityType

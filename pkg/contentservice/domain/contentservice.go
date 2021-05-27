@@ -31,7 +31,7 @@ func (service *contentService) AddContent(name string, authorID AuthorID, conten
 	id := service.repo.NewID()
 	err := service.repo.Store(Content{
 		ID:               id,
-		Name:             name,
+		Title:            name,
 		AuthorID:         authorID,
 		ContentType:      contentType,
 		AvailabilityType: availabilityType,

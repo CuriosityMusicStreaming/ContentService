@@ -42,7 +42,7 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 
 	return domain.Content{
 		ID:               domain.ContentID(content.ContentID),
-		Name:             content.Name,
+		Title:            content.Title,
 		AuthorID:         domain.AuthorID(content.AuthorID),
 		ContentType:      domain.ContentType(content.Type),
 		AvailabilityType: domain.ContentAvailabilityType(content.AvailabilityType),
@@ -51,9 +51,9 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 
 func (repo *contentRepository) Store(content domain.Content) error {
 	const insertSql = `
-		INSERT INTO content (content_id, name, author_id, type, availability_type) VALUES(?, ?, ?, ?, ?)
+		INSERT INTO content (content_id, title, author_id, type, availability_type) VALUES(?, ?, ?, ?, ?)
 		ON DUPLICATE KEY 
-		UPDATE content_id=VALUES(content_id), name=VALUES(name), author_id=VALUES(author_id), type=VALUES(type), availability_type=VALUES(availability_type)
+		UPDATE content_id=VALUES(content_id), title=VALUES(title), author_id=VALUES(author_id), type=VALUES(type), availability_type=VALUES(availability_type)
 	`
 
 	binaryUUID, err := uuid.UUID(content.ID).MarshalBinary()
@@ -66,7 +66,7 @@ func (repo *contentRepository) Store(content domain.Content) error {
 		return err
 	}
 
-	_, err = repo.client.Exec(insertSql, binaryUUID, content.Name, authorBinaryUUID, content.ContentType, content.AvailabilityType)
+	_, err = repo.client.Exec(insertSql, binaryUUID, content.Title, authorBinaryUUID, content.ContentType, content.AvailabilityType)
 	return err
 }
 
@@ -85,7 +85,7 @@ func (repo *contentRepository) Remove(contentID domain.ContentID) error {
 
 type sqlxContent struct {
 	ContentID        uuid.UUID `db:"content_id"`
-	Name             string    `db:"name"`
+	Title            string    `db:"title"`
 	AuthorID         uuid.UUID `db:"author_id"`
 	Type             int       `db:"type"`
 	AvailabilityType int       `db:"availability_type"`

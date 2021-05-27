@@ -24,10 +24,10 @@ const (
 )
 
 type Content struct {
-	ID       ContentID
-	Name     string
-	AuthorID AuthorID
-	ContentType
+	ID               ContentID
+	Title            string
+	AuthorID         AuthorID
+	ContentType      ContentType
 	AvailabilityType ContentAvailabilityType
 }
 

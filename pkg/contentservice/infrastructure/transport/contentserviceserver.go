@@ -112,7 +112,7 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 	for _, contentView := range list {
 		res = append(res, &api.Content{
 			ContentID:        contentView.ID.String(),
-			Name:             contentView.Name,
+			Name:             contentView.Title,
 			AuthorID:         contentView.AuthorID.String(),
 			Type:             contentTypeToApiMap[contentView.ContentType],
 			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
@@ -141,7 +141,7 @@ func (server *contentServiceServer) GetAuthorContent(_ context.Context, req *api
 	for _, contentView := range list {
 		res = append(res, &api.Content{
 			ContentID:        contentView.ID.String(),
-			Name:             contentView.Name,
+			Name:             contentView.Title,
 			AuthorID:         contentView.AuthorID.String(),
 			Type:             contentTypeToApiMap[contentView.ContentType],
 			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
