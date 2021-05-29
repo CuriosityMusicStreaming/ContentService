@@ -11,6 +11,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
+	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/net v0.0.0-20210331060903-cb1fcc7394e5
 	google.golang.org/genproto v0.0.0-20210331142528-b7513248f0ba

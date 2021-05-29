@@ -40,7 +40,12 @@ func (service *contentService) AddContent(name string, authorID AuthorID, conten
 		return ContentID{}, err
 	}
 
-	return id, nil
+	err = service.eventDispatcher.Dispatch(ContentAdded{
+		ContentID: id,
+		AuthorID:  authorID,
+	})
+
+	return id, err
 }
 
 func (service *contentService) DeleteContent(contentID ContentID, authorID AuthorID) error {

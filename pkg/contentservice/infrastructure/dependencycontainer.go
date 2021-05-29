@@ -5,8 +5,8 @@ import (
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
+	"contentservice/pkg/contentservice/app/storedevent"
 	"contentservice/pkg/contentservice/domain"
-	"contentservice/pkg/contentservice/infrastructure/integrationevent"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
 	"contentservice/pkg/contentservice/infrastructure/transport/client"
@@ -29,11 +29,12 @@ func NewDependencyContainer(
 ) DependencyContainer {
 
 	userDescriptorSerializer := userDescriptorSerializer()
+	eventStore := mysql.NewEventStore(client)
 
 	return &dependencyContainer{
 		contentService: contentService(
 			unitOfWorkFactory(client),
-			eventDispatcher(logger),
+			eventDispatcher(logger, eventStore),
 			authorizationService(
 				authorizationServiceClient,
 				userDescriptorSerializer,
@@ -70,11 +71,11 @@ func unitOfWorkFactory(client commonmysql.TransactionalClient) service.UnitOfWor
 	return mysql.NewUnitOfFactory(client)
 }
 
-func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
+func eventDispatcher(logger logger.Logger, store storedevent.Store) domain.EventDispatcher {
 	eventPublisher := domain.NewEventPublisher()
 
 	{
-		handler := integrationevent.NewIntegrationEventHandler(logger)
+		handler := storedevent.NewStoredDomainEventHandler(store, storedevent.NewEventSerializer())
 		eventPublisher.Subscribe(handler)
 	}
 
