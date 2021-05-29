@@ -4,13 +4,15 @@ import (
 	"contentservice/api/authorizationservice"
 	"contentservice/api/contentservice"
 	migrationsembedder "contentservice/data/mysql"
+	"contentservice/pkg/contentservice/app/storedevent"
 	"contentservice/pkg/contentservice/infrastructure"
+	"contentservice/pkg/contentservice/infrastructure/mysql"
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
@@ -47,13 +49,13 @@ func main() {
 }
 
 func runService(config *config, logger log.MainLogger) error {
-	dsn := mysql.DSN{
+	dsn := commonmysql.DSN{
 		User:     config.DatabaseUser,
 		Password: config.DatabasePassword,
 		Host:     config.DatabaseHost,
 		Database: config.DatabaseName,
 	}
-	connector := mysql.NewConnector()
+	connector := commonmysql.NewConnector()
 	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
 	if err != nil {
 		logger.Error(err, "failed to migrate")
@@ -79,10 +81,26 @@ func runService(config *config, logger log.MainLogger) error {
 		return err
 	}
 
+	transactionalClient := connector.TransactionalClient()
+
+	eventStore := mysql.NewEventStore(transactionalClient)
+
+	storedEventSender := initStoredEventSender(
+		transactionalClient,
+		eventStore,
+		transport.NewMockIntegrationTransport(logger),
+		logger,
+		time.Duration(config.StoredEventSenderDelay)*time.Second,
+	)
+
+	defer storedEventSender.Stop()
+
 	container := infrastructure.NewDependencyContainer(
-		connector.TransactionalClient(),
+		transactionalClient,
 		logger,
 		authorizationServiceClient,
+		eventStore,
+		storedEventSender.Increment,
 	)
 
 	serviceApi := transport.NewContentServiceServer(container)
@@ -169,4 +187,22 @@ func initAuthorizationServiceClient(config *config) (authorizationservice.Author
 	}
 
 	return authorizationservice.NewAuthorizationServiceClient(conn), nil
+}
+
+func initStoredEventSender(
+	client commonmysql.TransactionalClient,
+	eventStore storedevent.Store,
+	integrationEvenTransport storedevent.Transport,
+	logger log.Logger,
+	delay time.Duration,
+) storedevent.Sender {
+	tracker := mysql.NewEventsDispatchTracker(client)
+
+	return storedevent.NewStoredEventSender(
+		eventStore,
+		tracker,
+		integrationEvenTransport,
+		delay,
+		func(err error) { logger.Error(err) },
+	)
 }

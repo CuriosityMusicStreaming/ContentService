@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"contentservice/pkg/contentservice/app/storedevent"
-	"fmt"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -28,17 +27,19 @@ func (store *eventStore) Append(event storedevent.StoredEvent) error {
 }
 
 func (store *eventStore) GetAllAfter(id *storedevent.ID) ([]storedevent.StoredEvent, error) {
-	selectSql := `SELECT * FROM stored_event WHERE %s ORDER BY created_at`
+	selectSql := `SELECT stored_event_id, type, body FROM stored_event`
 	var args []interface{}
 
 	if id != nil {
-		selectSql = fmt.Sprintf(selectSql, "created_at > (SELECT created_at FROM stored_event WHERE stored_event_id = ?)")
+		selectSql += " WHERE created_at > (SELECT created_at FROM stored_event WHERE stored_event_id = ?)"
 		binaryID, err := uuid.UUID(*id).MarshalBinary()
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		args = append(args, binaryID)
 	}
+
+	selectSql += " ORDER BY created_at"
 
 	var storedEvents []sqlxStoredEvent
 
@@ -60,7 +61,7 @@ func (store *eventStore) GetAllAfter(id *storedevent.ID) ([]storedevent.StoredEv
 }
 
 type sqlxStoredEvent struct {
-	ID   uuid.UUID
-	Type string
-	Body string
+	ID   uuid.UUID `db:"stored_event_id"`
+	Type string    `db:"type"`
+	Body string    `db:"body"`
 }

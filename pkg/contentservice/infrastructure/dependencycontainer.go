@@ -26,14 +26,19 @@ func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
 	logger logger.Logger,
 	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
+	eventStore storedevent.Store,
+	storedEventSenderCallback mysql.UnitOfWorkCompleteNotifier,
 ) DependencyContainer {
 
 	userDescriptorSerializer := userDescriptorSerializer()
-	eventStore := mysql.NewEventStore(client)
+
+	unitOfWorkFactory, notifier := unitOfWorkFactory(client)
+
+	notifier.subscribe(storedEventSenderCallback)
 
 	return &dependencyContainer{
 		contentService: contentService(
-			unitOfWorkFactory(client),
+			unitOfWorkFactory,
 			eventDispatcher(logger, eventStore),
 			authorizationService(
 				authorizationServiceClient,
@@ -42,6 +47,20 @@ func NewDependencyContainer(
 		),
 		trustedContentQueryService: trustedContentQueryService(client),
 		userDescriptorSerializer:   userDescriptorSerializer,
+	}
+}
+
+type completeNotifier struct {
+	subscribers []mysql.UnitOfWorkCompleteNotifier
+}
+
+func (notifier *completeNotifier) subscribe(subscriber mysql.UnitOfWorkCompleteNotifier) {
+	notifier.subscribers = append(notifier.subscribers, subscriber)
+}
+
+func (notifier *completeNotifier) onComplete() {
+	for _, subscriber := range notifier.subscribers {
+		subscriber()
 	}
 }
 
@@ -67,8 +86,13 @@ func (container *dependencyContainer) UserDescriptorSerializer() commonauth.User
 	return container.userDescriptorSerializer
 }
 
-func unitOfWorkFactory(client commonmysql.TransactionalClient) service.UnitOfWorkFactory {
-	return mysql.NewUnitOfFactory(client)
+func unitOfWorkFactory(client commonmysql.TransactionalClient) (service.UnitOfWorkFactory, *completeNotifier) {
+	notifier := &completeNotifier{}
+
+	return mysql.NewNotifyingUnitOfWorkFactory(
+		mysql.NewUnitOfFactory(client),
+		notifier.onComplete,
+	), notifier
 }
 
 func eventDispatcher(logger logger.Logger, store storedevent.Store) domain.EventDispatcher {

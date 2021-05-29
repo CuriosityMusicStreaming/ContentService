@@ -1,5 +1,6 @@
 package storedevent
 
 type Transport interface {
-	Send(msgBody string, eventType string) error
+	Name() string
+	Send(eventType string, msgBody string) error
 }

@@ -3,7 +3,6 @@ package storedevent
 import (
 	"contentservice/pkg/contentservice/domain"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 )
 
@@ -36,8 +35,6 @@ func (serializer *eventSerializer) Serialize(event domain.Event) (string, error)
 	}
 
 	messageBody, err := json.Marshal(body)
-
-	fmt.Println("BODY", body)
 
 	return string(messageBody), err
 }

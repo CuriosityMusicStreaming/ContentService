@@ -3,7 +3,6 @@ package service
 import (
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/domain"
-	"fmt"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
 )
@@ -44,7 +43,6 @@ type contentService struct {
 
 func (service *contentService) AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error {
 	if canAdd, err := service.authorizationService.CanAddContent(userDescriptor); !canAdd || err != nil {
-		fmt.Println(err)
 		return err
 	}
 
