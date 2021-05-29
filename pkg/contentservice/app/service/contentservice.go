@@ -12,6 +12,8 @@ type ContentType int
 const (
 	ContentTypeSong    = ContentType(domain.ContentTypeSong)
 	ContentTypePodcast = ContentType(domain.ContentTypePodcast)
+
+	contentLockName = "contentservice-lock-content"
 )
 
 type ContentAvailabilityType int
@@ -75,7 +77,7 @@ func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, u
 }
 
 func (service *contentService) executeInUnitOfWork(f func(provider RepositoryProvider) error) error {
-	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork("")
+	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork(contentLockName)
 	if err != nil {
 		return err
 	}
