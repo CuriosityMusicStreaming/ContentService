@@ -1,12 +1,11 @@
 package integrationevent
 
 import (
-	"contentservice/pkg/contentservice/domain"
 	"fmt"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 )
 
-func NewIntegrationEventHandler(logger logger.Logger) domain.EventHandler {
+func NewIntegrationEventHandler(logger logger.Logger) Handler {
 	return &integrationEventListener{logger: logger}
 }
 
@@ -14,7 +13,8 @@ type integrationEventListener struct {
 	logger logger.Logger
 }
 
-func (handler *integrationEventListener) Handle(event domain.Event) error {
-	handler.logger.Info(fmt.Sprintf("event sended to queue %s", event.ID()))
+func (handler *integrationEventListener) Handle(msgBody string) error {
+	handler.logger.Info(fmt.Sprintf("Event received with body %s", msgBody))
+
 	return nil
 }

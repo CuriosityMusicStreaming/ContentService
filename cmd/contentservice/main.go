@@ -6,6 +6,7 @@ import (
 	migrationsembedder "contentservice/data/mysql"
 	"contentservice/pkg/contentservice/app/storedevent"
 	"contentservice/pkg/contentservice/infrastructure"
+	"contentservice/pkg/contentservice/infrastructure/integrationevent"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
@@ -71,29 +72,33 @@ func runService(config *config, logger log.MainLogger) error {
 		Password: config.AMQPPassword,
 		Host:     config.AMQPHost,
 	}, logger)
-	defer amqpConnection.Stop()
 
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
-	authorizationServiceClient, err := initAuthorizationServiceClient(config)
-	if err != nil {
-		return err
-	}
-
 	transactionalClient := connector.TransactionalClient()
+
+	integrationEventTransport := integrationevent.NewIntegrationEventTransport(
+		integrationevent.NewIntegrationEventHandler(logger),
+	)
+	amqpConnection.AddChannel(integrationEventTransport)
 
 	eventStore := mysql.NewEventStore(transactionalClient)
 
 	storedEventSender := initStoredEventSender(
 		transactionalClient,
 		eventStore,
-		transport.NewMockIntegrationTransport(logger),
+		integrationEventTransport,
 		logger,
 		time.Duration(config.StoredEventSenderDelay)*time.Second,
 	)
 
 	defer storedEventSender.Stop()
+
+	authorizationServiceClient, err := initAuthorizationServiceClient(config)
+	if err != nil {
+		return err
+	}
 
 	container := infrastructure.NewDependencyContainer(
 		transactionalClient,
@@ -102,6 +107,12 @@ func runService(config *config, logger log.MainLogger) error {
 		eventStore,
 		storedEventSender.Increment,
 	)
+
+	err = amqpConnection.Start()
+	if err != nil {
+		return err
+	}
+	defer amqpConnection.Stop()
 
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)

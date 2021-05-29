@@ -1,6 +1,7 @@
 package integrationevent
 
 import (
+	"contentservice/pkg/contentservice/app/storedevent"
 	commonamqp "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	"github.com/streadway/amqp"
 )
@@ -8,10 +9,12 @@ import (
 const (
 	domainEventExchangeName = "domain_event"
 	domainEventExchangeType = "topic"
-	domainEventsQueueName   = "content_service_domain_name"
+	domainEventsQueueName   = "content_service_domain_event"
 
 	contentType   = "application/json; charset=utf-8"
 	routingPrefix = "content_service."
+
+	transportName = "amqp_integration_events"
 )
 
 type Handler interface {
@@ -20,7 +23,7 @@ type Handler interface {
 
 type Transport interface {
 	commonamqp.Channel
-	Send(msgBody, eventType string) error
+	storedevent.Transport
 }
 
 func NewIntegrationEventTransport(handler Handler) Transport {
@@ -33,7 +36,11 @@ type transport struct {
 	handler Handler
 }
 
-func (t *transport) Send(msgBody, eventType string) error {
+func (t *transport) Name() string {
+	return transportName
+}
+
+func (t *transport) Send(eventType, msgBody string) error {
 	msg := amqp.Publishing{
 		DeliveryMode: amqp.Persistent,
 		ContentType:  contentType,
