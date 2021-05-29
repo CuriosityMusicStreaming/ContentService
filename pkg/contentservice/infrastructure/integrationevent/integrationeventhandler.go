@@ -1,4 +1,4 @@
-package integration
+package integrationevent
 
 import (
 	"contentservice/pkg/contentservice/domain"

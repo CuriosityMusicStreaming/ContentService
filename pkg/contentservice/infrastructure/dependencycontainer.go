@@ -6,7 +6,7 @@ import (
 	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/domain"
-	"contentservice/pkg/contentservice/infrastructure/integration"
+	"contentservice/pkg/contentservice/infrastructure/integrationevent"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
 	"contentservice/pkg/contentservice/infrastructure/transport/client"
@@ -74,7 +74,7 @@ func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
 	eventPublisher := domain.NewEventPublisher()
 
 	{
-		handler := integration.NewIntegrationEventHandler(logger)
+		handler := integrationevent.NewIntegrationEventHandler(logger)
 		eventPublisher.Subscribe(handler)
 	}
 
