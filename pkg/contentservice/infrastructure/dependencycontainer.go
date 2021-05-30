@@ -12,6 +12,7 @@ import (
 	"contentservice/pkg/contentservice/infrastructure/transport/client"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 )
 
@@ -26,7 +27,7 @@ func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
 	logger logger.Logger,
 	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
-	eventStore storedevent.Store,
+	eventStore commonstoredevent.Store,
 	storedEventSenderCallback mysql.UnitOfWorkCompleteNotifier,
 ) DependencyContainer {
 
@@ -39,7 +40,7 @@ func NewDependencyContainer(
 	return &dependencyContainer{
 		contentService: contentService(
 			unitOfWorkFactory,
-			eventDispatcher(logger, eventStore),
+			eventDispatcher(eventStore),
 			authorizationService(
 				authorizationServiceClient,
 				userDescriptorSerializer,
@@ -95,12 +96,14 @@ func unitOfWorkFactory(client commonmysql.TransactionalClient) (service.UnitOfWo
 	), notifier
 }
 
-func eventDispatcher(logger logger.Logger, store storedevent.Store) domain.EventDispatcher {
+func eventDispatcher(store commonstoredevent.Store) domain.EventDispatcher {
 	eventPublisher := domain.NewEventPublisher()
 
 	{
-		handler := storedevent.NewStoredDomainEventHandler(store, storedevent.NewEventSerializer())
-		eventPublisher.Subscribe(handler)
+		handler := commonstoredevent.NewStoredDomainEventHandler(store, storedevent.NewEventSerializer())
+		eventPublisher.Subscribe(domain.HandlerFunc(func(event domain.Event) error {
+			return handler.Handle(event)
+		}))
 	}
 
 	return eventPublisher

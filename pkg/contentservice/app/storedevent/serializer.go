@@ -3,14 +3,12 @@ package storedevent
 import (
 	"contentservice/pkg/contentservice/domain"
 	"encoding/json"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
+	commondomain "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/domain"
 	"github.com/google/uuid"
 )
 
-type EventSerializer interface {
-	Serialize(event domain.Event) (string, error)
-}
-
-func NewEventSerializer() EventSerializer {
+func NewEventSerializer() storedevent.EventSerializer {
 	return &eventSerializer{}
 }
 
@@ -22,7 +20,7 @@ type eventBody struct {
 	Payload *json.RawMessage
 }
 
-func (serializer *eventSerializer) Serialize(event domain.Event) (string, error) {
+func (serializer *eventSerializer) Serialize(event commondomain.Event) (string, error) {
 	payload, err := serializeAsJSON(event)
 	if err != nil {
 		return "", err
@@ -39,11 +37,11 @@ func (serializer *eventSerializer) Serialize(event domain.Event) (string, error)
 	return string(messageBody), err
 }
 
-func serializeAsJSON(event domain.Event) ([]byte, error) {
+func serializeAsJSON(event commondomain.Event) ([]byte, error) {
 	return json.Marshal(serializeEvent(event))
 }
 
-func serializeEvent(event domain.Event) (eventPayload interface{}) {
+func serializeEvent(event commondomain.Event) (eventPayload interface{}) {
 	switch currEvent := event.(type) {
 	case domain.ContentContentAvailabilityTypeChanged:
 		eventPayload = struct {

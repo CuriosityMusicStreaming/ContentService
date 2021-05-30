@@ -1,8 +1,8 @@
 package mysql
 
 import (
-	"contentservice/pkg/contentservice/app/storedevent"
 	"database/sql"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -13,7 +13,7 @@ const dispatchTrackerLockName = "dispatch-tracker-lock"
 
 var ErrLockNotAcquired = errors.New("lock for dispatch tracker not acquired")
 
-func NewEventsDispatchTracker(client mysql.TransactionalClient) *eventsDispatchTracker {
+func NewEventsDispatchTracker(client mysql.TransactionalClient) storedevent.EventsDispatchTracker {
 	return &eventsDispatchTracker{client: client}
 }
 

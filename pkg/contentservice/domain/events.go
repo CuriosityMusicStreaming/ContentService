@@ -8,6 +8,12 @@ type EventHandler interface {
 	Handle(event Event) error
 }
 
+type HandlerFunc func(event Event) error
+
+func (f HandlerFunc) Handle(event Event) error {
+	return f(event)
+}
+
 type EventDispatcher interface {
 	Dispatch(event Event) error
 }

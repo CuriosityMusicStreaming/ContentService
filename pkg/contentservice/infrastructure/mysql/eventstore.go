@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"contentservice/pkg/contentservice/app/storedevent"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"

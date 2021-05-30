@@ -1,7 +1,7 @@
 package integrationevent
 
 import (
-	"contentservice/pkg/contentservice/app/storedevent"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonamqp "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	"github.com/streadway/amqp"
 )
