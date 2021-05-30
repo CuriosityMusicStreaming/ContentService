@@ -28,7 +28,7 @@ func (factory *unitOfWorkFactory) NewUnitOfWork(lockName string) (service.UnitOf
 		lock = &l
 		err = lock.Lock()
 		if err != nil {
-			return nil, transaction.Rollback()
+			return nil, errors.Wrap(transaction.Rollback(), err.Error())
 		}
 	}
 

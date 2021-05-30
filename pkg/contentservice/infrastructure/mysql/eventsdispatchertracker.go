@@ -5,16 +5,23 @@ import (
 	"database/sql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"sync"
 )
 
-func NewEventsDispatchTracker(client mysql.Client) *eventsDispatchTracker {
+const dispatchTrackerLockName = "dispatch-tracker-lock"
+
+var ErrLockNotAcquired = errors.New("lock for dispatch tracker not acquired")
+
+func NewEventsDispatchTracker(client mysql.TransactionalClient) *eventsDispatchTracker {
 	return &eventsDispatchTracker{client: client}
 }
 
 type eventsDispatchTracker struct {
-	client mysql.Client
-	mutex  sync.Mutex
+	client      mysql.TransactionalClient
+	mutex       sync.Mutex
+	transaction mysql.Transaction
+	lock        *mysql.Lock
 }
 
 func (tracker *eventsDispatchTracker) TrackLastID(transportName string, id storedevent.ID) error {
@@ -51,11 +58,49 @@ func (tracker *eventsDispatchTracker) LastId(transportName string) (*storedevent
 func (tracker *eventsDispatchTracker) Lock() error {
 	tracker.mutex.Lock()
 
+	if tracker.transaction == nil {
+		var err error
+		tracker.transaction, err = tracker.client.BeginTransaction()
+		if err != nil {
+			return err
+		}
+	}
+
+	l := mysql.NewLock(tracker.transaction, dispatchTrackerLockName)
+	err := l.Lock()
+	if err != nil {
+		return err
+	}
+
+	tracker.lock = &l
+
 	return nil
 }
 
-func (tracker *eventsDispatchTracker) Unlock() error {
-	tracker.mutex.Unlock()
+func (tracker *eventsDispatchTracker) Unlock() (err error) {
+	defer tracker.mutex.Unlock()
 
-	return nil
+	defer func() {
+		if err != nil {
+			transactionErr := tracker.transaction.Rollback()
+			if transactionErr != nil {
+				err = errors.Wrap(err, transactionErr.Error())
+			}
+		} else {
+			err = tracker.transaction.Commit()
+		}
+		tracker.transaction = nil
+	}()
+
+	if tracker.transaction == nil {
+		return ErrLockNotAcquired
+	}
+
+	err = tracker.lock.Unlock()
+	if err != nil {
+		return err
+	}
+	tracker.lock = nil
+
+	return err
 }
