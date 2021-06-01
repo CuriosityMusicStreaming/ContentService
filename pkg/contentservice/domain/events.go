@@ -68,7 +68,8 @@ func (e ContentDeleted) ID() string {
 }
 
 type ContentContentAvailabilityTypeChanged struct {
-	ContentID ContentID
+	ContentID                  ContentID
+	NewContentAvailabilityType ContentAvailabilityType
 }
 
 func (e ContentContentAvailabilityTypeChanged) ID() string {

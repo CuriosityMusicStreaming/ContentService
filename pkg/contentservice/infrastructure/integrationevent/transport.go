@@ -87,7 +87,7 @@ func (t *transport) connectToReadChannel() error {
 	go func() {
 		for delivery := range readChan {
 			err = t.handler.Handle(string(delivery.Body))
-			if err != nil {
+			if err == nil {
 				err = delivery.Ack(false)
 			} else {
 				err = delivery.Nack(false, true)

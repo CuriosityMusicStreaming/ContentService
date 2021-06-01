@@ -87,5 +87,8 @@ func (service *contentService) SetContentAvailabilityType(contentID ContentID, a
 		return err
 	}
 
-	return service.eventDispatcher.Dispatch(ContentContentAvailabilityTypeChanged{ContentID: contentID})
+	return service.eventDispatcher.Dispatch(ContentContentAvailabilityTypeChanged{
+		ContentID:                  contentID,
+		NewContentAvailabilityType: availabilityType,
+	})
 }
