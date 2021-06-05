@@ -46,7 +46,7 @@ func serializeEvent(event commondomain.Event) (eventPayload interface{}) {
 	case domain.ContentContentAvailabilityTypeChanged:
 		eventPayload = struct {
 			ContentID                  uuid.UUID `json:"content_id"`
-			NewContentAvailabilityType int       `json:"new_content_availability_type"`
+			NewContentAvailabilityType int       `json:"content_availability_type"`
 		}{
 			ContentID:                  uuid.UUID(currEvent.ContentID),
 			NewContentAvailabilityType: int(currEvent.NewContentAvailabilityType),

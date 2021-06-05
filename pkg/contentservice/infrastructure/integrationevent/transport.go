@@ -11,8 +11,7 @@ const (
 	domainEventExchangeType = "topic"
 	domainEventsQueueName   = "content_service_domain_event"
 
-	contentType   = "application/json; charset=utf-8"
-	routingPrefix = "content_service."
+	contentType = "application/json; charset=utf-8"
 
 	transportName = "amqp_integration_events"
 )
@@ -40,14 +39,13 @@ func (t *transport) Name() string {
 	return transportName
 }
 
-func (t *transport) Send(eventType, msgBody string) error {
+func (t *transport) Send(_, msgBody string) error {
 	msg := amqp.Publishing{
 		DeliveryMode: amqp.Persistent,
 		ContentType:  contentType,
 		Body:         []byte(msgBody),
 	}
-	routingKey := routingPrefix + eventType
-	return t.channel.Publish(domainEventExchangeName, routingKey, false, false, msg)
+	return t.channel.Publish(domainEventExchangeName, "", false, false, msg)
 }
 
 func (t *transport) Connect(conn *amqp.Connection) error {
