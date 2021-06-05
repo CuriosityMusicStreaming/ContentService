@@ -22,7 +22,7 @@ type contentServiceServer struct {
 	container infrastructure.DependencyContainer
 }
 
-func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddContentRequest) (*emptypb.Empty, error) {
+func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddContentRequest) (*api.AddContentResponse, error) {
 	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
 	if err != nil {
 		return nil, err
@@ -38,12 +38,12 @@ func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddCo
 		return nil, ErrUnknownContentAvailabilityType
 	}
 
-	err = server.container.ContentService().AddContent(req.Name, userDesc, contentType, availabilityType)
+	contentID, err := server.container.ContentService().AddContent(req.Name, userDesc, contentType, availabilityType)
 	if err != nil {
 		return nil, err
 	}
 
-	return &emptypb.Empty{}, err
+	return &api.AddContentResponse{ContentID: contentID.String()}, err
 }
 
 func (server *contentServiceServer) DeleteContent(_ context.Context, req *api.DeleteContentRequest) (*emptypb.Empty, error) {
