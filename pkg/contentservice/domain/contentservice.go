@@ -31,7 +31,7 @@ func (service *contentService) AddContent(name string, authorID AuthorID, conten
 	id := service.repo.NewID()
 	err := service.repo.Store(Content{
 		ID:               id,
-		Name:             name,
+		Title:            name,
 		AuthorID:         authorID,
 		ContentType:      contentType,
 		AvailabilityType: availabilityType,
@@ -40,7 +40,12 @@ func (service *contentService) AddContent(name string, authorID AuthorID, conten
 		return ContentID{}, err
 	}
 
-	return id, nil
+	err = service.eventDispatcher.Dispatch(ContentAdded{
+		ContentID: id,
+		AuthorID:  authorID,
+	})
+
+	return id, err
 }
 
 func (service *contentService) DeleteContent(contentID ContentID, authorID AuthorID) error {
@@ -82,5 +87,8 @@ func (service *contentService) SetContentAvailabilityType(contentID ContentID, a
 		return err
 	}
 
-	return service.eventDispatcher.Dispatch(ContentContentAvailabilityTypeChanged{ContentID: contentID})
+	return service.eventDispatcher.Dispatch(ContentContentAvailabilityTypeChanged{
+		ContentID:                  contentID,
+		NewContentAvailabilityType: availabilityType,
+	})
 }

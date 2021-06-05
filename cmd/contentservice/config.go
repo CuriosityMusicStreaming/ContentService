@@ -17,7 +17,7 @@ type config struct {
 	ServeRESTAddress string `envconfig:"serve_rest_address" default:":8001"`
 	ServeGRPCAddress string `envconfig:"serve_grpc_address" default:":8002"`
 
-	UserServiceGRPCAddress string `envconfig:"user_service_grpc_address"`
+	AuthorizationServiceGRPCAddress string `envconfig:"authorization_service_grpc_address"`
 
 	DatabaseUser     string `envconfig:"db_user" default:"root"`
 	DatabasePassword string `envconfig:"db_password" default:"1234"`
@@ -29,4 +29,6 @@ type config struct {
 	AMQPPassword string `envconfig:"amqp_password" default:"guest"`
 
 	MaxDatabaseConnections int `envconfig:"max_connections" default:"10"`
+
+	StoredEventSenderDelay int `envconfig:"stored_event_sender_delay" default:"1"`
 }

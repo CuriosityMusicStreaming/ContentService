@@ -7,7 +7,7 @@ import (
 
 type ContentView struct {
 	ID               uuid.UUID
-	Name             string
+	Title            string
 	AuthorID         uuid.UUID
 	ContentType      service.ContentType
 	AvailabilityType service.ContentAvailabilityType
@@ -15,6 +15,7 @@ type ContentView struct {
 
 type ContentSpecification struct {
 	ContentIDs []uuid.UUID
+	AuthorIDs  []uuid.UUID
 }
 
 type ContentQueryService interface {

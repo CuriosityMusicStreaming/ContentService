@@ -3,7 +3,6 @@ package service
 import (
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/domain"
-	"fmt"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
 )
@@ -13,6 +12,8 @@ type ContentType int
 const (
 	ContentTypeSong    = ContentType(domain.ContentTypeSong)
 	ContentTypePodcast = ContentType(domain.ContentTypePodcast)
+
+	contentLockName = "contentservice-lock-content"
 )
 
 type ContentAvailabilityType int
@@ -23,7 +24,7 @@ const (
 )
 
 type ContentService interface {
-	AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error
+	AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) (uuid.UUID, error)
 	DeleteContent(contentID uuid.UUID, userDescriptor commonauth.UserDescriptor) error
 	SetContentAvailabilityType(contentID uuid.UUID, descriptor commonauth.UserDescriptor, availabilityType ContentAvailabilityType) error
 }
@@ -42,18 +43,27 @@ type contentService struct {
 	authorizationService auth.AuthorizationService
 }
 
-func (service *contentService) AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) error {
+func (service *contentService) AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) (uuid.UUID, error) {
 	if canAdd, err := service.authorizationService.CanAddContent(userDescriptor); !canAdd || err != nil {
-		fmt.Println(err)
-		return err
+		return [16]byte{}, err
 	}
 
-	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+	contentID := domain.ContentID{}
+
+	err := service.executeInUnitOfWork(func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
-		_, err := domainService.AddContent(name, domain.AuthorID(userDescriptor.UserID), domain.ContentType(contentType), domain.ContentAvailabilityType(availabilityType))
+		var err error
+		contentID, err = domainService.AddContent(
+			name,
+			domain.AuthorID(userDescriptor.UserID),
+			domain.ContentType(contentType),
+			domain.ContentAvailabilityType(availabilityType),
+		)
+
 		return err
 	})
+	return uuid.UUID(contentID), err
 }
 
 func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor commonauth.UserDescriptor) error {
@@ -77,7 +87,7 @@ func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, u
 }
 
 func (service *contentService) executeInUnitOfWork(f func(provider RepositoryProvider) error) error {
-	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork("")
+	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork(contentLockName)
 	if err != nil {
 		return err
 	}

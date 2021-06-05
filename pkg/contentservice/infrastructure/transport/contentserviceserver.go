@@ -22,7 +22,7 @@ type contentServiceServer struct {
 	container infrastructure.DependencyContainer
 }
 
-func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddContentRequest) (*emptypb.Empty, error) {
+func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddContentRequest) (*api.AddContentResponse, error) {
 	userDesc, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
 	if err != nil {
 		return nil, err
@@ -38,12 +38,12 @@ func (server *contentServiceServer) AddContent(_ context.Context, req *api.AddCo
 		return nil, ErrUnknownContentAvailabilityType
 	}
 
-	err = server.container.ContentService().AddContent(req.Name, userDesc, contentType, availabilityType)
+	contentID, err := server.container.ContentService().AddContent(req.Name, userDesc, contentType, availabilityType)
 	if err != nil {
 		return nil, err
 	}
 
-	return &emptypb.Empty{}, err
+	return &api.AddContentResponse{ContentID: contentID.String()}, err
 }
 
 func (server *contentServiceServer) DeleteContent(_ context.Context, req *api.DeleteContentRequest) (*emptypb.Empty, error) {
@@ -90,7 +90,8 @@ func (server *contentServiceServer) SetContentAvailabilityType(_ context.Context
 }
 
 func (server *contentServiceServer) GetContentList(_ context.Context, req *api.GetContentListRequest) (*api.GetContentListResponse, error) {
-	queryService := server.container.ContentQueryService()
+	// TODO: add correct user descriptor or delete entire method
+	queryService := server.container.AuthorizedContentQueryService(struct{ UserID uuid.UUID }{UserID: [16]byte{}})
 
 	contentIDs := make([]uuid.UUID, len(req.ContentIDs))
 	for _, contentID := range req.ContentIDs {
@@ -107,11 +108,11 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 		return nil, err
 	}
 
-	res := make([]*api.Content, len(list))
+	res := make([]*api.Content, 0, len(list))
 	for _, contentView := range list {
 		res = append(res, &api.Content{
 			ContentID:        contentView.ID.String(),
-			Name:             contentView.Name,
+			Name:             contentView.Title,
 			AuthorID:         contentView.AuthorID.String(),
 			Type:             contentTypeToApiMap[contentView.ContentType],
 			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
@@ -119,6 +120,35 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 	}
 
 	return &api.GetContentListResponse{Contents: res}, nil
+}
+
+func (server *contentServiceServer) GetAuthorContent(_ context.Context, req *api.GetAuthorContentRequest) (*api.GetAuthorContentResponse, error) {
+	userDescriptor, err := server.container.UserDescriptorSerializer().Deserialize(req.UserToken)
+	if err != nil {
+		return nil, err
+	}
+
+	queryService := server.container.AuthorizedContentQueryService(userDescriptor)
+
+	list, err := queryService.ContentList(query.ContentSpecification{
+		AuthorIDs: []uuid.UUID{userDescriptor.UserID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*api.Content, 0, len(list))
+	for _, contentView := range list {
+		res = append(res, &api.Content{
+			ContentID:        contentView.ID.String(),
+			Name:             contentView.Title,
+			AuthorID:         contentView.AuthorID.String(),
+			Type:             contentTypeToApiMap[contentView.ContentType],
+			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
+		})
+	}
+
+	return &api.GetAuthorContentResponse{Contents: res}, nil
 }
 
 var apiToContentTypeMap = map[api.ContentType]service.ContentType{

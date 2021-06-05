@@ -1,16 +1,19 @@
 package main
 
 import (
+	"contentservice/api/authorizationservice"
 	"contentservice/api/contentservice"
-	userserviceapi "contentservice/api/userservice"
 	migrationsembedder "contentservice/data/mysql"
 	"contentservice/pkg/contentservice/infrastructure"
+	"contentservice/pkg/contentservice/infrastructure/integrationevent"
+	"contentservice/pkg/contentservice/infrastructure/mysql"
 	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
@@ -47,13 +50,13 @@ func main() {
 }
 
 func runService(config *config, logger log.MainLogger) error {
-	dsn := mysql.DSN{
+	dsn := commonmysql.DSN{
 		User:     config.DatabaseUser,
 		Password: config.DatabasePassword,
 		Host:     config.DatabaseHost,
 		Database: config.DatabaseName,
 	}
-	connector := mysql.NewConnector()
+	connector := commonmysql.NewConnector()
 	err := connector.MigrateUp(dsn, migrationsembedder.MigrationsEmbedder)
 	if err != nil {
 		logger.Error(err, "failed to migrate")
@@ -69,21 +72,47 @@ func runService(config *config, logger log.MainLogger) error {
 		Password: config.AMQPPassword,
 		Host:     config.AMQPHost,
 	}, logger)
-	defer amqpConnection.Stop()
 
 	stopChan := make(chan struct{})
 	listenForKillSignal(stopChan)
 
-	userServiceClient, err := initUserServiceClient(config)
+	transactionalClient := connector.TransactionalClient()
+
+	integrationEventTransport := integrationevent.NewIntegrationEventTransport(
+		integrationevent.NewIntegrationEventHandler(logger),
+	)
+	amqpConnection.AddChannel(integrationEventTransport)
+
+	eventStore := mysql.NewEventStore(transactionalClient)
+
+	storedEventSender := initStoredEventSender(
+		transactionalClient,
+		eventStore,
+		integrationEventTransport,
+		logger,
+		time.Duration(config.StoredEventSenderDelay)*time.Second,
+	)
+
+	defer storedEventSender.Stop()
+
+	authorizationServiceClient, err := initAuthorizationServiceClient(config)
 	if err != nil {
 		return err
 	}
 
 	container := infrastructure.NewDependencyContainer(
-		connector.TransactionalClient(),
+		transactionalClient,
 		logger,
-		userServiceClient,
+		authorizationServiceClient,
+		eventStore,
+		storedEventSender.Increment,
 	)
+
+	err = amqpConnection.Start()
+	if err != nil {
+		return err
+	}
+	defer amqpConnection.Stop()
 
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)
@@ -113,14 +142,13 @@ func runService(config *config, logger log.MainLogger) error {
 			router := mux.NewRouter()
 			router.PathPrefix("/api/").Handler(grpcGatewayMux)
 
-			// Implement healthcheck for Kubernetes
 			router.HandleFunc("/resilience/ready", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = io.WriteString(w, http.StatusText(http.StatusOK))
 			}).Methods(http.MethodGet)
 
 			httpServer = &http.Server{
-				Handler:      transport.NewLoggingMiddleware(router, logger),
+				Handler:      router,
 				Addr:         config.ServeRESTAddress,
 				WriteTimeout: 15 * time.Second,
 				ReadTimeout:  15 * time.Second,
@@ -159,15 +187,33 @@ func makeGRPCUnaryInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-func initUserServiceClient(config *config) (userserviceapi.UserServiceClient, error) {
+func initAuthorizationServiceClient(config *config) (authorizationservice.AuthorizationServiceClient, error) {
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
 	}
 
-	conn, err := grpc.Dial(config.UserServiceGRPCAddress, opts...)
+	conn, err := grpc.Dial(config.AuthorizationServiceGRPCAddress, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return userserviceapi.NewUserServiceClient(conn), nil
+	return authorizationservice.NewAuthorizationServiceClient(conn), nil
+}
+
+func initStoredEventSender(
+	client commonmysql.TransactionalClient,
+	eventStore storedevent.Store,
+	integrationEvenTransport storedevent.Transport,
+	logger log.Logger,
+	delay time.Duration,
+) storedevent.Sender {
+	tracker := mysql.NewEventsDispatchTracker(client)
+
+	return storedevent.NewStoredEventSender(
+		eventStore,
+		tracker,
+		integrationEvenTransport,
+		delay,
+		func(err error) { logger.Error(err) },
+	)
 }

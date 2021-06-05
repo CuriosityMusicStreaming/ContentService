@@ -1,82 +1,140 @@
 package infrastructure
 
 import (
-	userserviceapi "contentservice/api/userservice"
+	"contentservice/api/authorizationservice"
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/app/query"
 	"contentservice/pkg/contentservice/app/service"
+	"contentservice/pkg/contentservice/app/storedevent"
 	"contentservice/pkg/contentservice/domain"
-	"contentservice/pkg/contentservice/infrastructure/integration"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
-	"contentservice/pkg/contentservice/infrastructure/userserviceadapter"
+	"contentservice/pkg/contentservice/infrastructure/transport/client"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 )
 
 type DependencyContainer interface {
 	ContentService() service.ContentService
-	ContentQueryService() query.ContentQueryService
+	TrustedContentQueryService() query.ContentQueryService
+	AuthorizedContentQueryService(userDescriptor commonauth.UserDescriptor) query.ContentQueryService
 	UserDescriptorSerializer() commonauth.UserDescriptorSerializer
 }
 
 func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
 	logger logger.Logger,
-	userServiceClient userserviceapi.UserServiceClient,
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
+	eventStore commonstoredevent.Store,
+	storedEventSenderCallback mysql.UnitOfWorkCompleteNotifier,
 ) DependencyContainer {
+
+	userDescriptorSerializer := userDescriptorSerializer()
+
+	unitOfWorkFactory, notifier := unitOfWorkFactory(client)
+
+	notifier.subscribe(storedEventSenderCallback)
+
 	return &dependencyContainer{
-		client:            client,
-		logger:            logger,
-		userServiceClient: userServiceClient,
-		eventDispatcher:   eventDispatcher(logger),
-		unitOfWorkFactory: unitOfWorkFactory(client),
+		contentService: contentService(
+			unitOfWorkFactory,
+			eventDispatcher(eventStore),
+			authorizationService(
+				authorizationServiceClient,
+				userDescriptorSerializer,
+			),
+		),
+		trustedContentQueryService: trustedContentQueryService(client),
+		userDescriptorSerializer:   userDescriptorSerializer,
+	}
+}
+
+type completeNotifier struct {
+	subscribers []mysql.UnitOfWorkCompleteNotifier
+}
+
+func (notifier *completeNotifier) subscribe(subscriber mysql.UnitOfWorkCompleteNotifier) {
+	notifier.subscribers = append(notifier.subscribers, subscriber)
+}
+
+func (notifier *completeNotifier) onComplete() {
+	for _, subscriber := range notifier.subscribers {
+		subscriber()
 	}
 }
 
 type dependencyContainer struct {
-	client            commonmysql.TransactionalClient
-	logger            logger.Logger
-	userServiceClient userserviceapi.UserServiceClient
-	eventDispatcher   domain.EventDispatcher
-	unitOfWorkFactory service.UnitOfWorkFactory
+	contentService             service.ContentService
+	trustedContentQueryService query.ContentQueryService
+	userDescriptorSerializer   commonauth.UserDescriptorSerializer
 }
 
 func (container *dependencyContainer) ContentService() service.ContentService {
-	return service.NewContentService(
-		container.unitOfWorkFactory,
-		container.eventDispatcher,
-		container.authorizationService(),
-	)
+	return container.contentService
 }
 
-func (container *dependencyContainer) ContentQueryService() query.ContentQueryService {
-	return infrastructurequery.NewContentQueryService(container.client)
+func (container *dependencyContainer) TrustedContentQueryService() query.ContentQueryService {
+	return container.trustedContentQueryService
+}
+
+func (container *dependencyContainer) AuthorizedContentQueryService(userDescriptor commonauth.UserDescriptor) query.ContentQueryService {
+	return query.NewAuthorizedContentQueryService(container.TrustedContentQueryService(), userDescriptor)
 }
 
 func (container *dependencyContainer) UserDescriptorSerializer() commonauth.UserDescriptorSerializer {
-	return commonauth.NewUserDescriptorSerializer()
+	return container.userDescriptorSerializer
 }
 
-func (container dependencyContainer) authorizationService() auth.AuthorizationService {
-	return userserviceadapter.NewAuthorizationService(
-		container.userServiceClient,
-		container.UserDescriptorSerializer(),
-	)
+func unitOfWorkFactory(client commonmysql.TransactionalClient) (service.UnitOfWorkFactory, *completeNotifier) {
+	notifier := &completeNotifier{}
+
+	return mysql.NewNotifyingUnitOfWorkFactory(
+		mysql.NewUnitOfFactory(client),
+		notifier.onComplete,
+	), notifier
 }
 
-func unitOfWorkFactory(client commonmysql.TransactionalClient) service.UnitOfWorkFactory {
-	return mysql.NewUnitOfFactory(client)
-}
-
-func eventDispatcher(logger logger.Logger) domain.EventDispatcher {
+func eventDispatcher(store commonstoredevent.Store) domain.EventDispatcher {
 	eventPublisher := domain.NewEventPublisher()
 
 	{
-		handler := integration.NewIntegrationEventHandler(logger)
-		eventPublisher.Subscribe(handler)
+		handler := commonstoredevent.NewStoredDomainEventHandler(store, storedevent.NewEventSerializer())
+		eventPublisher.Subscribe(domain.HandlerFunc(func(event domain.Event) error {
+			return handler.Handle(event)
+		}))
 	}
 
 	return eventPublisher
+}
+
+func contentService(
+	unitOfWork service.UnitOfWorkFactory,
+	eventDispatcher domain.EventDispatcher,
+	authorizationService auth.AuthorizationService,
+) service.ContentService {
+	return service.NewContentService(
+		unitOfWork,
+		eventDispatcher,
+		authorizationService,
+	)
+}
+
+func trustedContentQueryService(client commonmysql.TransactionalClient) query.ContentQueryService {
+	return infrastructurequery.NewContentQueryService(client)
+}
+
+func userDescriptorSerializer() commonauth.UserDescriptorSerializer {
+	return commonauth.NewUserDescriptorSerializer()
+}
+
+func authorizationService(
+	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
+	userDescriptorSerializer commonauth.UserDescriptorSerializer,
+) auth.AuthorizationService {
+	return client.NewAuthorizationService(
+		authorizationServiceClient,
+		userDescriptorSerializer,
+	)
 }

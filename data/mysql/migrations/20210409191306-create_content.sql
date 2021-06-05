@@ -2,7 +2,7 @@
 CREATE TABLE content
 (
     `content_id` binary(16) NOT NULL,
-    `name` varchar(255) NOT NULL,
+    `title` varchar(255) NOT NULL,
     `author_id` binary(16) NOT NULL,
     `type` smallint(2) NOT NULL,
     `availability_type` smallint(2) NOT NULL,
