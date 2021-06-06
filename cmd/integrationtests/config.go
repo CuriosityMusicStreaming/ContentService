@@ -19,6 +19,5 @@ type config struct {
 	ContentServiceGRPCPort string `envconfig:"contentservice_grpc_port"`
 	MaxWaitTimeSeconds     int    `envconfig:"max_wait_time_seconds"`
 
-	UserServiceHost     string `envconfig:"userservice_host"`
-	UserServiceGRPCPort string `envconfig:"userservice_grpc_port"`
+	ServeGRPCAddress string `envconfig:"serve_grpc_address" default:":8002"`
 }

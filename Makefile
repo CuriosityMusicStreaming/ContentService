@@ -1,4 +1,5 @@
 export APP_CMD_NAME = contentservice
+export APP_TEST_CMD_NAME = integrationtests
 export REGISTRY = vadimmakerov/music-streaming
 export APP_PROTO_FILES = \
 	api/contentservice/contentservice.proto \
@@ -9,7 +10,8 @@ all: build check test
 
 .PHONY: build
 build: sync-api generate modules
-	bin/go-build.sh "cmd" "bin/$(APP_CMD_NAME)" $(APP_CMD_NAME)
+	bin/go-build.sh "cmd/$(APP_CMD_NAME)" "bin/$(APP_CMD_NAME)" $(APP_CMD_NAME)
+	bin/go-build.sh "cmd/$(APP_TEST_CMD_NAME)" "bin/$(APP_TEST_CMD_NAME)" $(APP_TEST_CMD_NAME)
 
 .PHONY: generate
 generate:

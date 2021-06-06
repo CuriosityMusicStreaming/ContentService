@@ -1,13 +1,17 @@
 package main
 
 import (
+	"contentservice/api/authorizationservice"
 	contentserviceapi "contentservice/api/contentservice"
-	userserviceapi "contentservice/api/userservice"
 	"contentservice/pkg/intergrationtests/app"
+	"contentservice/pkg/intergrationtests/infrastructure"
 	"fmt"
 	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
+	commonserver "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"google.golang.org/grpc"
+	"net/http"
+	"time"
 )
 
 var appID = "UNKNOWN"
@@ -20,13 +24,27 @@ func main() {
 		logger.FatalError(err)
 	}
 
-	err = runService(config)
+	err = runService(config, logger)
 	if err != nil {
 		logger.FatalError(err)
 	}
 }
 
-func runService(config *config) error {
+func runService(config *config, logger log.Logger) error {
+	server, userContainer := infrastructure.NewAuthorizationServer()
+
+	baseServer := grpc.NewServer()
+	authorizationservice.RegisterAuthorizationServiceServer(baseServer, server)
+
+	grpcServer := commonserver.NewGrpcServer(baseServer,
+		commonserver.GrpcServerConfig{ServeAddress: config.ServeGRPCAddress},
+		logger,
+	)
+
+	runServer(grpcServer, logger)
+
+	waitForService(config.ContentServiceHost + config.ContentServiceRESTPort)
+
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
 	}
@@ -35,17 +53,37 @@ func runService(config *config) error {
 	if err != nil {
 		return err
 	}
-	userServiceClient, err := initUserServiceClient(opts, config)
-	if err != nil {
-		return err
-	}
+
+	logger.Info("Start tests")
 
 	app.RunTests(
 		contentServiceClient,
-		userServiceClient,
+		userContainer,
 	)
 
+	logger.Info("All test passed successfully")
+
 	return nil
+}
+
+func waitForService(serviceAddress string) {
+	const readyPath = "/resilience/ready"
+	const retries = 30
+
+	request, err := http.NewRequest(http.MethodGet, serviceAddress+readyPath, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < retries; i++ {
+		res, err := http.DefaultClient.Do(request)
+		if err == nil && res.StatusCode == http.StatusOK {
+			_ = res.Body.Close()
+			return
+		}
+		time.Sleep(time.Second)
+	}
+	panic("failed to wait service")
 }
 
 func initLogger() log.MainLogger {
@@ -61,11 +99,11 @@ func initContentServiceClient(commonOpts []grpc.DialOption, config *config) (con
 	return contentserviceapi.NewContentServiceClient(conn), nil
 }
 
-func initUserServiceClient(commonOpts []grpc.DialOption, config *config) (userserviceapi.UserServiceClient, error) {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", config.UserServiceHost, config.UserServiceGRPCPort), commonOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return userserviceapi.NewUserServiceClient(conn), nil
+func runServer(server commonserver.Server, logger log.Logger) {
+	go func() {
+		err := server.Serve()
+		if err != nil {
+			logger.Error(err, "failed to serve grpc")
+		}
+	}()
 }
