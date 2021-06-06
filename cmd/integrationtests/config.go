@@ -14,10 +14,10 @@ func parseConfig() (*config, error) {
 }
 
 type config struct {
-	ContentServiceHost     string `envconfig:"contentservice_host"`
-	ContentServiceRESTPort string `envconfig:"contentservice_rest_port"`
-	ContentServiceGRPCPort string `envconfig:"contentservice_grpc_port"`
-	MaxWaitTimeSeconds     int    `envconfig:"max_wait_time_seconds"`
+	ContentServiceHost        string `envconfig:"content_service_host"`
+	ContentServiceRESTAddress string `envconfig:"content_service_rest_address"`
+	ContentServiceGRPCAddress string `envconfig:"content_service_grpc_address"`
+	MaxWaitTimeSeconds        int    `envconfig:"max_wait_time_seconds"`
 
 	ServeGRPCAddress string `envconfig:"serve_grpc_address" default:":8002"`
 }

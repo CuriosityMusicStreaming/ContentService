@@ -43,7 +43,7 @@ func runService(config *config, logger log.Logger) error {
 
 	runServer(grpcServer, logger)
 
-	waitForService(config.ContentServiceHost + config.ContentServiceRESTPort)
+	waitForService(config.ContentServiceHost + config.ContentServiceRESTAddress)
 
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
@@ -70,7 +70,7 @@ func waitForService(serviceAddress string) {
 	const readyPath = "/resilience/ready"
 	const retries = 30
 
-	request, err := http.NewRequest(http.MethodGet, serviceAddress+readyPath, nil)
+	request, err := http.NewRequest(http.MethodGet, "http://"+serviceAddress+readyPath, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +91,7 @@ func initLogger() log.MainLogger {
 }
 
 func initContentServiceClient(commonOpts []grpc.DialOption, config *config) (contentserviceapi.ContentServiceClient, error) {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", config.ContentServiceHost, config.ContentServiceGRPCPort), commonOpts...)
+	conn, err := grpc.Dial(fmt.Sprintf("%s%s", config.ContentServiceHost, config.ContentServiceGRPCAddress), commonOpts...)
 	if err != nil {
 		return nil, err
 	}
