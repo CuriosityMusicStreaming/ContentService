@@ -2,16 +2,19 @@ version: "3.3"
 
 services:
     contentservice-api-client:
+        container_name: contentservice-api-client
         build:
             context: .
             dockerfile: data/docker/tests/Dockerfile.tests
-        depends_on:
-            - contentservice
         environment:
             SERVE_GRPC_ADDRESS: :8082
             CONTENT_SERVICE_HOST: contentservice
             CONTENT_SERVICE_REST_ADDRESS: :8001
             CONTENT_SERVICE_GRPC_ADDRESS: :8002
+        networks:
+            default:
+                aliases:
+                    - contentservice-api-client
 
     contentservice:
         image: vadimmakerov/music-streaming-contentservice:master
@@ -19,6 +22,7 @@ services:
         depends_on:
             - db
             - rabbitmq
+            - contentservice-api-client
         environment:
             SERVE_REST_ADDRESS: :8001
             SERVE_GRPC_ADDRESS: :8002
@@ -29,7 +33,7 @@ services:
             AMQP_HOST: rabbitmq
             AMQP_USER: guest
             AMQP_PASSWORD: guest
-            AUTHORIZATION_SERVICE_GRPC_ADDRESS: contentservice-api-client:8002
+            AUTHORIZATION_SERVICE_GRPC_ADDRESS: contentservice-api-client:8082
 
     db:
         image: mysql:5.7

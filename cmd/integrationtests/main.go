@@ -30,7 +30,7 @@ func main() {
 	}
 }
 
-func runService(config *config, logger log.Logger) error {
+func runService(config *config, logger log.MainLogger) error {
 	server, userContainer := infrastructure.NewAuthorizationServer()
 
 	baseServer := grpc.NewServer()
@@ -99,11 +99,11 @@ func initContentServiceClient(commonOpts []grpc.DialOption, config *config) (con
 	return contentserviceapi.NewContentServiceClient(conn), nil
 }
 
-func runServer(server commonserver.Server, logger log.Logger) {
+func runServer(server commonserver.Server, logger log.MainLogger) {
 	go func() {
 		err := server.Serve()
 		if err != nil {
-			logger.Error(err, "failed to serve grpc")
+			logger.FatalError(err, "failed to serve grpc")
 		}
 	}()
 }
