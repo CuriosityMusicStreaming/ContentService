@@ -100,6 +100,8 @@ func addContent(serviceApiFacade *contentServiceApiFacade, container UserContain
 
 		//Error cause anotherAuthor cannot manage firstContent
 		//assertErr(serviceApiFacade.SetContentAvailabilityType(anotherAuthor, firstContentID, contentserviceapi.ContentAvailabilityType_Private))
+
+		assertNoErr(serviceApiFacade.DeleteContent(author, firstContentID))
 	}
 
 	container.Clear()
