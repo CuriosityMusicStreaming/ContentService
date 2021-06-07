@@ -18,13 +18,88 @@ func addContent(serviceApiFacade *contentServiceApiFacade, container UserContain
 	container.AddListener(listener)
 
 	{
-		_, err := serviceApiFacade.AddContent(
-			"new song",
-			contentserviceapi.ContentType_Song,
-			contentserviceapi.ContentAvailabilityType_Public,
+		//contentTitle := "new song"
+		//contentType := contentserviceapi.ContentType_Song
+		//contentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
+		//_, err := serviceApiFacade.AddContent(
+		//	contentTitle,
+		//	contentType,
+		//	contentAvailabilityType,
+		//	listener,
+		//)
+	}
+
+	{
+		firstContentTitle := "new song"
+		firstContentType := contentserviceapi.ContentType_Song
+		firstContentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
+
+		secondContentTitle := "new podcast"
+		secondContentType := contentserviceapi.ContentType_Podcast
+		secondContentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
+
+		addContentResp, err := serviceApiFacade.AddContent(
+			firstContentTitle,
+			firstContentType,
+			firstContentAvailabilityType,
 			author,
 		)
-		assertErr(err)
+		assertNoErr(err)
+
+		firstContentID := addContentResp.ContentID
+
+		contentsResp, err := serviceApiFacade.GetAuthorContent(author)
+		assertNoErr(err)
+
+		assertEqual(1, len(contentsResp.Contents))
+		content := contentsResp.Contents[0]
+		assertEqual(firstContentID, content.ContentID)
+		assertEqual(firstContentTitle, content.Name)
+		assertEqual(firstContentType, content.Type)
+		assertEqual(firstContentAvailabilityType, content.AvailabilityType)
+
+		addContentResp, err = serviceApiFacade.AddContent(
+			secondContentTitle,
+			secondContentType,
+			secondContentAvailabilityType,
+			author,
+		)
+		assertNoErr(err)
+
+		secondContentID := addContentResp.ContentID
+
+		contentsResp, err = serviceApiFacade.GetAuthorContent(author)
+		assertNoErr(err)
+
+		assertEqual(2, len(contentsResp.Contents))
+
+		assertNoErr(serviceApiFacade.DeleteContent(author, firstContentID))
+		assertNoErr(serviceApiFacade.DeleteContent(author, secondContentID))
+	}
+
+	{
+		//anotherAuthor := auth.UserDescriptor{UserID: uuid.New()}
+		firstContentTitle := "new song"
+		firstContentType := contentserviceapi.ContentType_Song
+		firstContentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
+
+		addContentResp, err := serviceApiFacade.AddContent(
+			firstContentTitle,
+			firstContentType,
+			firstContentAvailabilityType,
+			author,
+		)
+		assertNoErr(err)
+
+		firstContentID := addContentResp.ContentID
+
+		//Error cause author owns first content, not anotherAuthor
+		//assertErr(serviceApiFacade.DeleteContent(anotherAuthor, firstContentID))
+
+		assertNoErr(serviceApiFacade.SetContentAvailabilityType(author, firstContentID, contentserviceapi.ContentAvailabilityType_Private))
+
+		//Error cause anotherAuthor cannot manage firstContent
+		//assertErr(serviceApiFacade.SetContentAvailabilityType(anotherAuthor, firstContentID, contentserviceapi.ContentAvailabilityType_Private))
 	}
 
 	container.Clear()
