@@ -14,7 +14,7 @@ type UserContainer interface {
 }
 
 func RunTests(contentServiceClient contentserviceapi.ContentServiceClient, container UserContainer) {
-	ContentTests(&contentServiceApiFacade{
+	contentTests(&contentServiceApiFacade{
 		client:     contentServiceClient,
 		serializer: auth.NewUserDescriptorSerializer(),
 	}, container)

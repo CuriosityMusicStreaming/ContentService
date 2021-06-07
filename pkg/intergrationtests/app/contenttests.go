@@ -6,8 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func ContentTests(serviceApiFacade *contentServiceApiFacade, container UserContainer) {
+func contentTests(serviceApiFacade *contentServiceApiFacade, container UserContainer) {
 	addContent(serviceApiFacade, container)
+	manageContent(serviceApiFacade, container)
 }
 
 func addContent(serviceApiFacade *contentServiceApiFacade, container UserContainer) {
@@ -77,8 +78,18 @@ func addContent(serviceApiFacade *contentServiceApiFacade, container UserContain
 		assertNoErr(serviceApiFacade.DeleteContent(author, secondContentID))
 	}
 
+	container.Clear()
+}
+
+func manageContent(serviceApiFacade *contentServiceApiFacade, container UserContainer) {
+	author := auth.UserDescriptor{UserID: uuid.New()}
+	anotherAuthor := auth.UserDescriptor{UserID: uuid.New()}
+
+	container.AddAuthor(author)
+	container.AddAuthor(anotherAuthor)
+
 	{
-		//anotherAuthor := auth.UserDescriptor{UserID: uuid.New()}
+
 		firstContentTitle := "new song"
 		firstContentType := contentserviceapi.ContentType_Song
 		firstContentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
@@ -103,6 +114,4 @@ func addContent(serviceApiFacade *contentServiceApiFacade, container UserContain
 
 		assertNoErr(serviceApiFacade.DeleteContent(author, firstContentID))
 	}
-
-	container.Clear()
 }
