@@ -37,21 +37,23 @@ func (facade *contentServiceApiFacade) AddContent(
 	userToken, err := facade.serializer.Serialize(userDescriptor)
 	assertNoErr(err)
 
-	return facade.client.AddContent(context.Background(), &contentserviceapi.AddContentRequest{
+	resp, err := facade.client.AddContent(context.Background(), &contentserviceapi.AddContentRequest{
 		Name:             title,
 		Type:             contentType,
 		AvailabilityType: availabilityType,
 		UserToken:        userToken,
 	})
+	return resp, transformError(err)
 }
 
 func (facade *contentServiceApiFacade) GetAuthorContent(userDescriptor auth.UserDescriptor) (*contentserviceapi.GetAuthorContentResponse, error) {
 	userToken, err := facade.serializer.Serialize(userDescriptor)
 	assertNoErr(err)
 
-	return facade.client.GetAuthorContent(context.Background(), &contentserviceapi.GetAuthorContentRequest{
+	resp, err := facade.client.GetAuthorContent(context.Background(), &contentserviceapi.GetAuthorContentRequest{
 		UserToken: userToken,
 	})
+	return resp, transformError(err)
 }
 
 func (facade *contentServiceApiFacade) GetContentList(contentIDs []string) (*contentserviceapi.GetContentListResponse, error) {
@@ -91,8 +93,10 @@ func transformError(err error) error {
 	s, ok := status.FromError(err)
 	if ok {
 		switch s.Code() {
-		case codes.PermissionDenied:
+		case codes.InvalidArgument:
 			return ErrOnlyAuthorCanCreateContent
+		case codes.PermissionDenied:
+			return ErrOnlyAuthorCanManageContent
 		}
 	}
 	return err
@@ -100,4 +104,5 @@ func transformError(err error) error {
 
 var (
 	ErrOnlyAuthorCanCreateContent = errors.New("only author can create content")
+	ErrOnlyAuthorCanManageContent = errors.New("only author can manage content")
 )

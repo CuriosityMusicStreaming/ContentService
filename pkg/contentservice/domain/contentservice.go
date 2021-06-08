@@ -5,12 +5,11 @@ import (
 )
 
 var (
-	ErrOnlyAuthorCanDeleteContent = errors.New("only author can delete content")
 	ErrOnlyAuthorCanManageContent = errors.New("only author can manage content")
 )
 
 type ContentService interface {
-	AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error)
+	AddContent(title string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error)
 	DeleteContent(contentID ContentID, authorID AuthorID) error
 	SetContentAvailabilityType(contentID ContentID, authorID AuthorID, availabilityType ContentAvailabilityType) error
 }
@@ -27,11 +26,11 @@ type contentService struct {
 	eventDispatcher EventDispatcher
 }
 
-func (service *contentService) AddContent(name string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error) {
+func (service *contentService) AddContent(title string, authorID AuthorID, contentType ContentType, availabilityType ContentAvailabilityType) (ContentID, error) {
 	id := service.repo.NewID()
 	err := service.repo.Store(Content{
 		ID:               id,
-		Title:            name,
+		Title:            title,
 		AuthorID:         authorID,
 		ContentType:      contentType,
 		AvailabilityType: availabilityType,
@@ -55,7 +54,7 @@ func (service *contentService) DeleteContent(contentID ContentID, authorID Autho
 	}
 
 	if content.AuthorID != authorID {
-		return ErrOnlyAuthorCanDeleteContent
+		return ErrOnlyAuthorCanManageContent
 	}
 
 	err = service.repo.Remove(content.ID)

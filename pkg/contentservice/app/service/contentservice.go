@@ -43,7 +43,7 @@ type contentService struct {
 	authorizationService auth.AuthorizationService
 }
 
-func (service *contentService) AddContent(name string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) (uuid.UUID, error) {
+func (service *contentService) AddContent(title string, userDescriptor commonauth.UserDescriptor, contentType ContentType, availabilityType ContentAvailabilityType) (uuid.UUID, error) {
 	if canAdd, err := service.authorizationService.CanAddContent(userDescriptor); !canAdd || err != nil {
 		return [16]byte{}, err
 	}
@@ -55,7 +55,7 @@ func (service *contentService) AddContent(name string, userDescriptor commonauth
 
 		var err error
 		contentID, err = domainService.AddContent(
-			name,
+			title,
 			domain.AuthorID(userDescriptor.UserID),
 			domain.ContentType(contentType),
 			domain.ContentAvailabilityType(availabilityType),

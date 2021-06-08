@@ -19,15 +19,17 @@ func addContent(serviceApiFacade *contentServiceApiFacade, container UserContain
 	container.AddListener(listener)
 
 	{
-		//contentTitle := "new song"
-		//contentType := contentserviceapi.ContentType_Song
-		//contentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
-		//_, err := serviceApiFacade.AddContent(
-		//	contentTitle,
-		//	contentType,
-		//	contentAvailabilityType,
-		//	listener,
-		//)
+		contentTitle := "new song"
+		contentType := contentserviceapi.ContentType_Song
+		contentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
+		_, err := serviceApiFacade.AddContent(
+			contentTitle,
+			contentType,
+			contentAvailabilityType,
+			listener,
+		)
+
+		assertEqual(err, ErrOnlyAuthorCanCreateContent)
 	}
 
 	{
@@ -89,7 +91,6 @@ func manageContent(serviceApiFacade *contentServiceApiFacade, container UserCont
 	container.AddAuthor(anotherAuthor)
 
 	{
-
 		firstContentTitle := "new song"
 		firstContentType := contentserviceapi.ContentType_Song
 		firstContentAvailabilityType := contentserviceapi.ContentAvailabilityType_Public
@@ -105,13 +106,32 @@ func manageContent(serviceApiFacade *contentServiceApiFacade, container UserCont
 		firstContentID := addContentResp.ContentID
 
 		//Error cause author owns first content, not anotherAuthor
-		//assertErr(serviceApiFacade.DeleteContent(anotherAuthor, firstContentID))
+		assertEqual(serviceApiFacade.DeleteContent(anotherAuthor, firstContentID), ErrOnlyAuthorCanManageContent)
 
 		assertNoErr(serviceApiFacade.SetContentAvailabilityType(author, firstContentID, contentserviceapi.ContentAvailabilityType_Private))
 
 		//Error cause anotherAuthor cannot manage firstContent
-		//assertErr(serviceApiFacade.SetContentAvailabilityType(anotherAuthor, firstContentID, contentserviceapi.ContentAvailabilityType_Private))
+		assertEqual(serviceApiFacade.SetContentAvailabilityType(anotherAuthor, firstContentID, contentserviceapi.ContentAvailabilityType_Private), ErrOnlyAuthorCanManageContent)
 
 		assertNoErr(serviceApiFacade.DeleteContent(author, firstContentID))
+	}
+
+	{
+		resp, err := serviceApiFacade.AddContent(
+			"new song",
+			contentserviceapi.ContentType_Song,
+			contentserviceapi.ContentAvailabilityType_Public,
+			author,
+		)
+		assertNoErr(err)
+
+		contentID := resp.ContentID
+
+		assertNoErr(serviceApiFacade.SetContentAvailabilityType(author, contentID, contentserviceapi.ContentAvailabilityType_Private))
+
+		contentsResp, err := serviceApiFacade.GetContentList([]string{contentID})
+		assertNoErr(err)
+
+		assertEqual(0, len(contentsResp.Contents))
 	}
 }

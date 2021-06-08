@@ -2,9 +2,12 @@ package infrastructure
 
 import (
 	"contentservice/api/authorizationservice"
+	"contentservice/pkg/intergrationtests/app"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func NewAuthorizationServer() (authorizationservice.AuthorizationServiceServer, *UsersContainer) {
@@ -35,7 +38,7 @@ func (server *authorizationServer) CanAddContent(_ context.Context, req *authori
 
 	for _, user := range server.container.Listeners {
 		if user.UserID == userDescriptor.UserID {
-			return &authorizationservice.CanAddContentResponse{CanAdd: false}, errors.New("user can`t add content")
+			return &authorizationservice.CanAddContentResponse{CanAdd: false}, status.Error(codes.InvalidArgument, app.ErrOnlyAuthorCanCreateContent.Error())
 		}
 	}
 
