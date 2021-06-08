@@ -1,4 +1,4 @@
-##ContentService service
+## ContentService service
 
 Сервис по хранению и менеджменту контента пользователей
 
