@@ -1,18 +1,18 @@
 ## ContentService service
 
-Сервис по хранению и менеджменту контента пользователей
+Service to store and manage user content
 
-#### Сборка
+#### Build
 
-Выполнить make
+Run make
 
 ```shell
 make
 ```
 
-Команда соберёт все зависимости и собранный бинарный файл положит в `bin/` 
+Command build all dependencies and put binary file in `bin/`
 
-(Опционально) Выполнить `make publish`, чтобы положить сервис в контейнер
+(_Optional_) Run `make publish`, to dockerize service
 
 
 #### Test
