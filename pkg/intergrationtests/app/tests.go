@@ -3,7 +3,10 @@ package app
 import (
 	contentserviceapi "contentservice/api/contentservice"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserContainer interface {
@@ -65,7 +68,7 @@ func (facade contentServiceApiFacade) DeleteContent(userDescriptor auth.UserDesc
 		ContentID: contentID,
 		UserToken: userToken,
 	})
-	return err
+	return transformError(err)
 }
 
 func (facade contentServiceApiFacade) SetContentAvailabilityType(
@@ -81,5 +84,20 @@ func (facade contentServiceApiFacade) SetContentAvailabilityType(
 		NewContentAvailabilityType: contentAvailabilityType,
 		UserToken:                  userToken,
 	})
+	return transformError(err)
+}
+
+func transformError(err error) error {
+	s, ok := status.FromError(err)
+	if ok {
+		switch s.Code() {
+		case codes.PermissionDenied:
+			return ErrOnlyAuthorCanCreateContent
+		}
+	}
 	return err
 }
+
+var (
+	ErrOnlyAuthorCanCreateContent = errors.New("only author can create content")
+)
