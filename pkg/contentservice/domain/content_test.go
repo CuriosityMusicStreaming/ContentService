@@ -53,6 +53,8 @@ func TestContentService_SetContentAvailabilityType(t *testing.T) {
 		assert.Error(t, err, ErrOnlyAuthorCanManageContent.Error())
 	}
 
+	mockEventDispatcher.clear()
+
 	{
 		newAvailabilityType := ContentAvailabilityTypePrivate
 		err := contentService.SetContentAvailabilityType(contentID, authorID, newAvailabilityType)
@@ -61,9 +63,9 @@ func TestContentService_SetContentAvailabilityType(t *testing.T) {
 		content := mockRepo.contents[contentID]
 		assert.Equal(t, content.AvailabilityType, newAvailabilityType)
 
-		assert.Equal(t, len(mockEventDispatcher.events), 1, "changing availability type dispatches event")
+		assert.Equal(t, 1, len(mockEventDispatcher.events), "changing availability type dispatches event")
 
-		assert.Equal(t, mockEventDispatcher.events[0].ID(), "content_availability_type_changed")
+		assert.Equal(t, "content_availability_type_changed", mockEventDispatcher.events[0].ID())
 	}
 }
 
@@ -84,7 +86,7 @@ func TestContentService_DeleteContent(t *testing.T) {
 
 	{
 		err := contentService.DeleteContent(contentID, anotherUserID)
-		assert.Error(t, err, ErrOnlyAuthorCanDeleteContent.Error())
+		assert.Error(t, err, ErrOnlyAuthorCanManageContent.Error())
 	}
 
 	{
@@ -143,4 +145,8 @@ func (eventDispatcher *mockEventDispatcher) Dispatch(event Event) error {
 	eventDispatcher.events = append(eventDispatcher.events, event)
 
 	return nil
+}
+
+func (eventDispatcher *mockEventDispatcher) clear() {
+	eventDispatcher.events = nil
 }
