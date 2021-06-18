@@ -25,7 +25,7 @@ func (repo *contentRepository) NewID() domain.ContentID {
 }
 
 func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content, error) {
-	const selectSql = `SELECT * from content WHERE content_id = ?`
+	const selectSQL = `SELECT * from content WHERE content_id = ?`
 
 	binaryUUID, err := uuid.UUID(contentID).MarshalBinary()
 	if err != nil {
@@ -34,7 +34,7 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 
 	var content sqlxContent
 
-	err = repo.client.Get(&content, selectSql, binaryUUID)
+	err = repo.client.Get(&content, selectSQL, binaryUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Content{}, domain.ErrContentNotFound
@@ -52,7 +52,7 @@ func (repo *contentRepository) Find(contentID domain.ContentID) (domain.Content,
 }
 
 func (repo *contentRepository) Store(content domain.Content) error {
-	const insertSql = `
+	const insertSQL = `
 		INSERT INTO content (content_id, title, author_id, type, availability_type) VALUES(?, ?, ?, ?, ?)
 		ON DUPLICATE KEY 
 		UPDATE content_id=VALUES(content_id), title=VALUES(title), author_id=VALUES(author_id), type=VALUES(type), availability_type=VALUES(availability_type)
@@ -68,21 +68,20 @@ func (repo *contentRepository) Store(content domain.Content) error {
 		return err
 	}
 
-	_, err = repo.client.Exec(insertSql, binaryUUID, content.Title, authorBinaryUUID, content.ContentType, content.AvailabilityType)
+	_, err = repo.client.Exec(insertSQL, binaryUUID, content.Title, authorBinaryUUID, content.ContentType, content.AvailabilityType)
 	return err
 }
 
 func (repo *contentRepository) Remove(contentID domain.ContentID) error {
-	const deleteSql = `DELETE FROM content WHERE content_id = ?`
+	const deleteSQL = `DELETE FROM content WHERE content_id = ?`
 
 	binaryUUID, err := uuid.UUID(contentID).MarshalBinary()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	_, err = repo.client.Exec(deleteSql, binaryUUID)
+	_, err = repo.client.Exec(deleteSQL, binaryUUID)
 	return err
-
 }
 
 type sqlxContent struct {

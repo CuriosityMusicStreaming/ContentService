@@ -109,13 +109,7 @@ func runService(config *config, logger log.MainLogger) error {
 		return err
 	}
 
-	container := infrastructure.NewDependencyContainer(
-		transactionalClient,
-		logger,
-		authorizationServiceClient,
-		eventStore,
-		storedEventSender.Increment,
-	)
+	container := infrastructure.NewDependencyContainer(transactionalClient, authorizationServiceClient, eventStore, storedEventSender.Increment)
 
 	err = amqpConnection.Start()
 	if err != nil {
@@ -128,11 +122,11 @@ func runService(config *config, logger log.MainLogger) error {
 		}
 	}()
 
-	serviceApi := transport.NewContentServiceServer(container)
+	serviceAPI := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)
 
 	baseServer := grpc.NewServer(grpc.UnaryInterceptor(makeGRPCUnaryInterceptor(logger)))
-	contentservice.RegisterContentServiceServer(baseServer, serviceApi)
+	contentservice.RegisterContentServiceServer(baseServer, serviceAPI)
 
 	serverHub.AddServer(server.NewGrpcServer(
 		baseServer,

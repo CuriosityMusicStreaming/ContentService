@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 
@@ -14,7 +13,7 @@ import (
 	"contentservice/pkg/contentservice/domain"
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
-	"contentservice/pkg/contentservice/infrastructure/transport/client"
+	transportclient "contentservice/pkg/contentservice/infrastructure/transport/client"
 )
 
 type DependencyContainer interface {
@@ -24,9 +23,9 @@ type DependencyContainer interface {
 	UserDescriptorSerializer() commonauth.UserDescriptorSerializer
 }
 
+//nolint
 func NewDependencyContainer(
 	client commonmysql.TransactionalClient,
-	logger logger.Logger,
 	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
 	eventStore commonstoredevent.Store,
 	storedEventSenderCallback mysql.UnitOfWorkCompleteNotifier,
@@ -134,7 +133,7 @@ func authorizationService(
 	authorizationServiceClient authorizationservice.AuthorizationServiceClient,
 	userDescriptorSerializer commonauth.UserDescriptorSerializer,
 ) auth.AuthorizationService {
-	return client.NewAuthorizationService(
+	return transportclient.NewAuthorizationService(
 		authorizationServiceClient,
 		userDescriptorSerializer,
 	)

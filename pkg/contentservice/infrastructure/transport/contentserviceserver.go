@@ -115,8 +115,8 @@ func (server *contentServiceServer) GetContentList(_ context.Context, req *api.G
 			ContentID:        contentView.ID.String(),
 			Name:             contentView.Title,
 			AuthorID:         contentView.AuthorID.String(),
-			Type:             contentTypeToApiMap[contentView.ContentType],
-			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
+			Type:             contentTypeToAPIMap[contentView.ContentType],
+			AvailabilityType: contentAvailabilityTypeToAPIMap[contentView.AvailabilityType],
 		})
 	}
 
@@ -144,8 +144,8 @@ func (server *contentServiceServer) GetAuthorContent(_ context.Context, req *api
 			ContentID:        contentView.ID.String(),
 			Name:             contentView.Title,
 			AuthorID:         contentView.AuthorID.String(),
-			Type:             contentTypeToApiMap[contentView.ContentType],
-			AvailabilityType: contentAvailabilityTypeToApiMap[contentView.AvailabilityType],
+			Type:             contentTypeToAPIMap[contentView.ContentType],
+			AvailabilityType: contentAvailabilityTypeToAPIMap[contentView.AvailabilityType],
 		})
 	}
 
@@ -162,12 +162,12 @@ var apiToContentAvailabilityTypeMap = map[api.ContentAvailabilityType]service.Co
 	api.ContentAvailabilityType_Private: service.ContentAvailabilityTypePrivate,
 }
 
-var contentTypeToApiMap = map[service.ContentType]api.ContentType{
+var contentTypeToAPIMap = map[service.ContentType]api.ContentType{
 	service.ContentTypeSong:    api.ContentType_Song,
 	service.ContentTypePodcast: api.ContentType_Podcast,
 }
 
-var contentAvailabilityTypeToApiMap = map[service.ContentAvailabilityType]api.ContentAvailabilityType{
+var contentAvailabilityTypeToAPIMap = map[service.ContentAvailabilityType]api.ContentAvailabilityType{
 	service.ContentAvailabilityTypePublic:  api.ContentAvailabilityType_Public,
 	service.ContentAvailabilityTypePrivate: api.ContentAvailabilityType_Private,
 }

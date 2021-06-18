@@ -3,15 +3,15 @@ package integrationevent
 import (
 	"fmt"
 
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 )
 
-func NewIntegrationEventHandler(logger logger.Logger) Handler {
+func NewIntegrationEventHandler(logger log.Logger) Handler {
 	return &integrationEventListener{logger: logger}
 }
 
 type integrationEventListener struct {
-	logger logger.Logger
+	logger log.Logger
 }
 
 func (handler *integrationEventListener) Handle(msgBody string) error {

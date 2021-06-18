@@ -21,6 +21,7 @@ func (service *authorizedContentQueryService) ContentList(spec ContentSpecificat
 		return nil, err
 	}
 
+	//nolint:prealloc
 	var filteredContentViews []ContentView
 	for _, view := range views {
 		if view.AvailabilityType == appservice.ContentAvailabilityTypePrivate && view.AuthorID != service.userDescriptor.UserID {

@@ -22,18 +22,18 @@ type contentQueryService struct {
 }
 
 func (queryService *contentQueryService) ContentList(spec query.ContentSpecification) ([]query.ContentView, error) {
-	selectSql := `SELECT * from content`
+	selectSQL := `SELECT * from content`
 	conditions, args, err := getWhereConditionsBySpec(spec)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	if conditions != "" {
-		selectSql += fmt.Sprintf(` WHERE %s`, conditions)
+		selectSQL += fmt.Sprintf(` WHERE %s`, conditions)
 	}
 
 	var contents []sqlxContent
 
-	err = queryService.client.Select(&contents, selectSql, args...)
+	err = queryService.client.Select(&contents, selectSQL, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +41,7 @@ func (queryService *contentQueryService) ContentList(spec query.ContentSpecifica
 	return convertContents(contents), nil
 }
 
+//nolint
 func getWhereConditionsBySpec(spec query.ContentSpecification) (string, []interface{}, error) {
 	var conditions []string
 	var params []interface{}
