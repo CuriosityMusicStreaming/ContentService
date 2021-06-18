@@ -1,10 +1,11 @@
 package service
 
 import (
-	"contentservice/pkg/contentservice/app/auth"
-	"contentservice/pkg/contentservice/domain"
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
+
+	"contentservice/pkg/contentservice/app/auth"
+	"contentservice/pkg/contentservice/domain"
 )
 
 type ContentType int
@@ -50,7 +51,7 @@ func (service *contentService) AddContent(title string, userDescriptor commonaut
 
 	contentID := domain.ContentID{}
 
-	err := service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+	err := service.executeInUnitOfWork(contentLockName, func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
 		var err error
@@ -67,7 +68,7 @@ func (service *contentService) AddContent(title string, userDescriptor commonaut
 }
 
 func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor commonauth.UserDescriptor) error {
-	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+	return service.executeInUnitOfWork(contentLockName+contentID.String(), func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
 		return domainService.DeleteContent(domain.ContentID(contentID), domain.AuthorID(userDescriptor.UserID))
@@ -75,7 +76,7 @@ func (service *contentService) DeleteContent(contentID uuid.UUID, userDescriptor
 }
 
 func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, userDescriptor commonauth.UserDescriptor, availabilityType ContentAvailabilityType) error {
-	return service.executeInUnitOfWork(func(provider RepositoryProvider) error {
+	return service.executeInUnitOfWork(contentLockName+contentID.String(), func(provider RepositoryProvider) error {
 		domainService := domain.NewContentService(provider.ContentRepository(), service.eventDispatcher)
 
 		return domainService.SetContentAvailabilityType(
@@ -86,8 +87,8 @@ func (service *contentService) SetContentAvailabilityType(contentID uuid.UUID, u
 	})
 }
 
-func (service *contentService) executeInUnitOfWork(f func(provider RepositoryProvider) error) error {
-	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork(contentLockName)
+func (service *contentService) executeInUnitOfWork(lockName string, f func(provider RepositoryProvider) error) error {
+	unitOfWork, err := service.unitOfWorkFactory.NewUnitOfWork(lockName)
 	if err != nil {
 		return err
 	}

@@ -2,11 +2,13 @@ package mysql
 
 import (
 	"database/sql"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"sync"
+
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 )
 
 const dispatchTrackerLockName = "dispatch-tracker-lock"

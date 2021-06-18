@@ -1,12 +1,13 @@
 package app
 
 import (
-	contentserviceapi "contentservice/api/contentservice"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	contentserviceapi "contentservice/api/contentservice"
 )
 
 type UserContainer interface {

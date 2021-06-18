@@ -2,6 +2,7 @@ package integrationevent
 
 import (
 	"fmt"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
 )
 

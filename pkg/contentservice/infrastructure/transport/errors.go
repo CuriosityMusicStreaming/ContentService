@@ -1,10 +1,11 @@
 package transport
 
 import (
-	"contentservice/pkg/contentservice/domain"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"contentservice/pkg/contentservice/domain"
 )
 
 func translateError(err error) error {

@@ -1,11 +1,13 @@
 package domain
 
 import (
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
+//nolint
 func TestContentService_AddContent(t *testing.T) {
 	mockRepo := newMockRepo()
 	mockEventDispatcher := newMockEventDispatcher()
@@ -32,6 +34,7 @@ func TestContentService_AddContent(t *testing.T) {
 	}
 }
 
+//nolint
 func TestContentService_SetContentAvailabilityType(t *testing.T) {
 	mockRepo := newMockRepo()
 	mockEventDispatcher := newMockEventDispatcher()
@@ -69,6 +72,7 @@ func TestContentService_SetContentAvailabilityType(t *testing.T) {
 	}
 }
 
+//nolint
 func TestContentService_DeleteContent(t *testing.T) {
 	mockRepo := newMockRepo()
 	mockEventDispatcher := newMockEventDispatcher()

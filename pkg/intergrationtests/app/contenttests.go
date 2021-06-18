@@ -1,9 +1,10 @@
 package app
 
 import (
-	contentserviceapi "contentservice/api/contentservice"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 	"github.com/google/uuid"
+
+	contentserviceapi "contentservice/api/contentservice"
 )
 
 func contentTests(serviceApiFacade *contentServiceApiFacade, container UserContainer) {

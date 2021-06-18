@@ -1,14 +1,16 @@
 package query
 
 import (
-	"contentservice/pkg/contentservice/app/query"
-	"contentservice/pkg/contentservice/app/service"
 	"fmt"
+	"strings"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"strings"
+
+	"contentservice/pkg/contentservice/app/query"
+	"contentservice/pkg/contentservice/app/service"
 )
 
 func NewContentQueryService(client mysql.Client) query.ContentQueryService {
@@ -19,7 +21,7 @@ type contentQueryService struct {
 	client mysql.Client
 }
 
-func (service *contentQueryService) ContentList(spec query.ContentSpecification) ([]query.ContentView, error) {
+func (queryService *contentQueryService) ContentList(spec query.ContentSpecification) ([]query.ContentView, error) {
 	selectSql := `SELECT * from content`
 	conditions, args, err := getWhereConditionsBySpec(spec)
 	if err != nil {
@@ -31,7 +33,7 @@ func (service *contentQueryService) ContentList(spec query.ContentSpecification)
 
 	var contents []sqlxContent
 
-	err = service.client.Select(&contents, selectSql, args...)
+	err = queryService.client.Select(&contents, selectSql, args...)
 	if err != nil {
 		return nil, err
 	}

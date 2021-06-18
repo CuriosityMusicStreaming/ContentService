@@ -1,11 +1,13 @@
 package repository
 
 import (
-	"contentservice/pkg/contentservice/domain"
 	"database/sql"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
+	"contentservice/pkg/contentservice/domain"
 )
 
 func NewContentRepository(client mysql.Client) domain.ContentRepository {

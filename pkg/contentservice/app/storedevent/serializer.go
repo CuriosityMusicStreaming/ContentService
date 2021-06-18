@@ -1,11 +1,13 @@
 package storedevent
 
 import (
-	"contentservice/pkg/contentservice/domain"
 	"encoding/json"
+
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
 	commondomain "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/domain"
 	"github.com/google/uuid"
+
+	"contentservice/pkg/contentservice/domain"
 )
 
 func NewEventSerializer() storedevent.EventSerializer {

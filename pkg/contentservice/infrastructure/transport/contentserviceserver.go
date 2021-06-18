@@ -1,15 +1,16 @@
 package transport
 
 import (
-	"contentservice/pkg/contentservice/app/query"
-	"contentservice/pkg/contentservice/app/service"
-	"contentservice/pkg/contentservice/infrastructure"
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	api "contentservice/api/contentservice"
+	"contentservice/pkg/contentservice/app/query"
+	"contentservice/pkg/contentservice/app/service"
+	"contentservice/pkg/contentservice/infrastructure"
 )
 
 func NewContentServiceServer(container infrastructure.DependencyContainer) api.ContentServiceServer {

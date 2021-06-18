@@ -1,6 +1,11 @@
 package infrastructure
 
 import (
+	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
+	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+
 	"contentservice/api/authorizationservice"
 	"contentservice/pkg/contentservice/app/auth"
 	"contentservice/pkg/contentservice/app/query"
@@ -10,10 +15,6 @@ import (
 	"contentservice/pkg/contentservice/infrastructure/mysql"
 	infrastructurequery "contentservice/pkg/contentservice/infrastructure/mysql/query"
 	"contentservice/pkg/contentservice/infrastructure/transport/client"
-	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
-	commonstoredevent "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
-	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
 )
 
 type DependencyContainer interface {

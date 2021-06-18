@@ -1,8 +1,9 @@
 package query
 
 import (
-	appservice "contentservice/pkg/contentservice/app/service"
 	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
+
+	appservice "contentservice/pkg/contentservice/app/service"
 )
 
 func NewAuthorizedContentQueryService(queryService ContentQueryService, userDescriptor auth.UserDescriptor) ContentQueryService {

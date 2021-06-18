@@ -1,11 +1,12 @@
 package mysql
 
 import (
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	"github.com/pkg/errors"
+
 	"contentservice/pkg/contentservice/app/service"
 	"contentservice/pkg/contentservice/domain"
 	"contentservice/pkg/contentservice/infrastructure/mysql/repository"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
-	"github.com/pkg/errors"
 )
 
 func NewUnitOfFactory(client mysql.TransactionalClient) service.UnitOfWorkFactory {

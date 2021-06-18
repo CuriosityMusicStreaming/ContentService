@@ -1,9 +1,11 @@
 package client
 
 import (
+	"context"
+
 	"contentservice/api/authorizationservice"
 	"contentservice/pkg/contentservice/app/auth"
-	"context"
+
 	commonauth "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/auth"
 )
 

@@ -1,25 +1,8 @@
 package main
 
 import (
-	"contentservice/api/authorizationservice"
-	"contentservice/api/contentservice"
-	migrationsembedder "contentservice/data/mysql"
-	"contentservice/pkg/contentservice/infrastructure"
-	"contentservice/pkg/contentservice/infrastructure/integrationevent"
-	"contentservice/pkg/contentservice/infrastructure/mysql"
-	"contentservice/pkg/contentservice/infrastructure/transport"
 	"context"
 	"fmt"
-	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
-	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
-	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
-	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
 	"io"
 	stdlog "log"
 	"net/http"
@@ -28,7 +11,25 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/logger"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/app/storedevent"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/amqp"
+	jsonlog "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/logger"
+	commonmysql "github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/mysql"
+	"github.com/CuriosityMusicStreaming/ComponentsPool/pkg/infrastructure/server"
 	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+
+	"contentservice/api/authorizationservice"
+	"contentservice/api/contentservice"
+	migrationsembedder "contentservice/data/mysql"
+	"contentservice/pkg/contentservice/infrastructure"
+	"contentservice/pkg/contentservice/infrastructure/integrationevent"
+	"contentservice/pkg/contentservice/infrastructure/mysql"
+	"contentservice/pkg/contentservice/infrastructure/transport"
 )
 
 var appID = "UNKNOWN"
@@ -68,7 +69,12 @@ func runService(config *config, logger log.MainLogger) error {
 	if err != nil {
 		return err
 	}
-	defer connector.Close()
+	defer func() {
+		connectorCloseErr := connector.Close()
+		if connectorCloseErr != nil {
+			logger.FatalError(connectorCloseErr)
+		}
+	}()
 
 	amqpConnection := amqp.NewAMQPConnection(&amqp.Config{
 		User:     config.AMQPUser,
@@ -115,7 +121,12 @@ func runService(config *config, logger log.MainLogger) error {
 	if err != nil {
 		return err
 	}
-	defer amqpConnection.Stop()
+	defer func() {
+		amqpConnectionCloseErr := amqpConnection.Stop()
+		if amqpConnectionCloseErr != nil {
+			logger.FatalError(amqpConnectionCloseErr)
+		}
+	}()
 
 	serviceApi := transport.NewContentServiceServer(container)
 	serverHub := server.NewHub(stopChan)

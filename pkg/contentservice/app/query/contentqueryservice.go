@@ -1,8 +1,9 @@
 package query
 
 import (
-	"contentservice/pkg/contentservice/app/service"
 	"github.com/google/uuid"
+
+	"contentservice/pkg/contentservice/app/service"
 )
 
 type ContentView struct {
